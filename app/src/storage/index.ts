@@ -3,7 +3,7 @@
 
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
 import { argon2id } from '../core/crypto';
-import * as sodium from 'libsodium-wrappers';
+import sodium from 'libsodium-wrappers';
 
 // Database name uses stealth naming per stealth-ux spec
 const DB_NAME = 'feed_cache';
@@ -162,15 +162,24 @@ class SecureStorage implements StorageInterface {
       throw new Error(`Unsupported encrypted data version: ${encrypted.version}`);
     }
 
+    // Ensure we have proper Uint8Arrays (IndexedDB may return plain objects)
+    const iv = encrypted.iv instanceof Uint8Array
+      ? encrypted.iv
+      : new Uint8Array(Object.values(encrypted.iv));
+    const ciphertext = encrypted.ciphertext instanceof Uint8Array
+      ? encrypted.ciphertext
+      : new Uint8Array(Object.values(encrypted.ciphertext));
+
     // Decrypt with AES-256-GCM
+    // Create fresh ArrayBuffers to avoid offset issues from IndexedDB retrieval
     const plaintext = await crypto.subtle.decrypt(
       {
         name: 'AES-GCM',
-        iv: encrypted.iv.buffer as ArrayBuffer,
+        iv: new Uint8Array(iv).buffer as ArrayBuffer,
         tagLength: 128,
       },
       this.encryptionKey,
-      encrypted.ciphertext.buffer as ArrayBuffer
+      new Uint8Array(ciphertext).buffer as ArrayBuffer
     );
 
     // Deserialize from bytes to JSON to object
@@ -365,10 +374,16 @@ export async function initStorage(passphrase: string): Promise<StorageInterface>
   });
 
   // Get or generate salt
-  let salt = await db.get('meta', 'salt') as Uint8Array | undefined;
-  if (!salt) {
+  let saltRaw = await db.get('meta', 'salt');
+  let salt: Uint8Array;
+  if (!saltRaw) {
     salt = crypto.getRandomValues(new Uint8Array(16));
     await db.put('meta', salt, 'salt');
+  } else {
+    // Ensure salt is a proper Uint8Array (IndexedDB may return plain object)
+    salt = saltRaw instanceof Uint8Array
+      ? saltRaw
+      : new Uint8Array(Object.values(saltRaw as Record<string, number>));
   }
 
   // Derive encryption key using Argon2id
@@ -381,9 +396,10 @@ export async function initStorage(passphrase: string): Promise<StorageInterface>
   );
 
   // Import key for Web Crypto AES-GCM
+  // Create fresh ArrayBuffer to avoid offset issues
   const cryptoKey = await crypto.subtle.importKey(
     'raw',
-    keyMaterial.buffer as ArrayBuffer,
+    new Uint8Array(keyMaterial).buffer as ArrayBuffer,
     { name: 'AES-GCM' },
     false,
     ['encrypt', 'decrypt']
