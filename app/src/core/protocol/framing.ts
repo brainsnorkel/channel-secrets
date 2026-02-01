@@ -3,6 +3,7 @@
 // Implements SPEC.md Section 8
 
 import { hmacSha256 } from '../crypto';
+import { rsEncode, rsDecode } from './reed-solomon';
 
 /**
  * Message frame structure (SPEC.md Section 8.1):
@@ -123,7 +124,11 @@ export async function encodeFrame(
   completeFrame.set(frameWithoutAuth, 0);
   completeFrame.set(authTag, frameWithoutAuth.length);
 
-  return completeFrame;
+  // Apply Reed-Solomon error correction (SPEC.md Section 8.4)
+  // protected_message = RS_encode(message_frame, ecc_symbols=8)
+  const protectedFrame = rsEncode(completeFrame, 8);
+
+  return protectedFrame;
 }
 
 /**
@@ -149,7 +154,34 @@ export async function decodeFrame(
     throw new Error('Epoch key must be 32 bytes');
   }
 
-  if (frameBytes.length < 11) { // Minimum: 1 byte header + 2 bytes length + 8 bytes auth tag
+  // Minimum size: 1 header + 2 length + 8 auth + 8 RS ECC = 19 bytes
+  if (frameBytes.length < 19) {
+    return {
+      version: 0,
+      flags: 0,
+      payload: new Uint8Array(0),
+      valid: false,
+      encrypted: false
+    };
+  }
+
+  // Apply Reed-Solomon error correction (SPEC.md Section 8.4)
+  // This corrects up to 4 symbol errors
+  let correctedFrame: Uint8Array;
+  try {
+    correctedFrame = rsDecode(frameBytes, 8);
+  } catch {
+    // Too many errors to correct
+    return {
+      version: 0,
+      flags: 0,
+      payload: new Uint8Array(0),
+      valid: false,
+      encrypted: false
+    };
+  }
+
+  if (correctedFrame.length < 11) { // Minimum: 1 byte header + 2 bytes length + 8 bytes auth tag
     return {
       version: 0,
       flags: 0,
@@ -160,18 +192,18 @@ export async function decodeFrame(
   }
 
   // Parse header
-  const versionFlags = frameBytes[0];
+  const versionFlags = correctedFrame[0];
   const version = (versionFlags >> 4) & 0x0F;
   const flags = versionFlags & 0x0F;
   const encrypted = (flags & FLAG_ENCRYPTED) !== 0;
 
   // Parse length (in bits)
-  const lengthBits = (frameBytes[1] << 8) | frameBytes[2];
+  const lengthBits = (correctedFrame[1] << 8) | correctedFrame[2];
   const lengthBytes = Math.ceil(lengthBits / 8);
 
   // Check frame size consistency
   const expectedFrameSize = 3 + lengthBytes + 8; // header + payload + auth_tag
-  if (frameBytes.length < expectedFrameSize) {
+  if (correctedFrame.length < expectedFrameSize) {
     return {
       version,
       flags,
@@ -182,11 +214,11 @@ export async function decodeFrame(
   }
 
   // Extract payload and auth tag
-  const encryptedPayload = frameBytes.subarray(3, 3 + lengthBytes);
-  const receivedAuthTag = frameBytes.subarray(3 + lengthBytes, 3 + lengthBytes + 8);
+  const encryptedPayload = correctedFrame.subarray(3, 3 + lengthBytes);
+  const receivedAuthTag = correctedFrame.subarray(3 + lengthBytes, 3 + lengthBytes + 8);
 
   // Verify auth tag
-  const frameWithoutAuth = frameBytes.subarray(0, 3 + lengthBytes);
+  const frameWithoutAuth = correctedFrame.subarray(0, 3 + lengthBytes);
   const expectedAuthTag = await computeAuthTag(epochKey, frameWithoutAuth);
 
   const authValid = receivedAuthTag.every((byte, i) => byte === expectedAuthTag[i]);

@@ -24,3 +24,8 @@ export {
   extractFeatures,
   type FeatureId
 } from './features';
+
+export {
+  rsEncode,
+  rsDecode,
+} from './reed-solomon';
