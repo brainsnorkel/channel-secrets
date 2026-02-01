@@ -1,7 +1,7 @@
 // Module: core/crypto
 // StegoChannel cryptographic primitives
 
-import sodium from 'libsodium-wrappers';
+import sodium from 'libsodium-wrappers-sumo';
 
 export type Sodium = typeof sodium;
 

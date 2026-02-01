@@ -3,7 +3,7 @@
 
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
 import { argon2id } from '../core/crypto';
-import sodium from 'libsodium-wrappers';
+import sodium from 'libsodium-wrappers-sumo';
 
 // Database name uses stealth naming per stealth-ux spec
 const DB_NAME = 'feed_cache';

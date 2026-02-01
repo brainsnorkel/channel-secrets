@@ -19,7 +19,7 @@
   "dependencies": {
     "@atproto/api": "^0.18.20",
     "idb": "^8.0.3",
-    "libsodium-wrappers": "^0.8.2",
+    "libsodium-wrappers-sumo": "^0.8.2",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "reedsolomon": "^1.0.0",
