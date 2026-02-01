@@ -34,18 +34,28 @@ StegoChannel is a steganographic protocol that hides messages in the *selection*
 
 ### D1: Web Application with Optional Desktop Wrapper
 
-**Decision**: Build as a TypeScript/React web application. Optionally wrap with Tauri for desktop distribution.
+**Decision**: Build as a TypeScript/React web application using tosijs ecosystem for state management and validation. Optionally wrap with Tauri for desktop distribution.
+
+**Technology Stack**:
+- **React** with TypeScript for UI components
+- **react-tosijs** for path-based state management (lighter than Redux, ~10kB)
+- **tosijs-schema** for runtime validation (~3kB, JSON-serializable schemas)
+- **Vite** for build tooling
+- **Tauri** (optional) for desktop distribution
 
 **Rationale**:
 - Web Crypto API provides necessary cryptographic primitives
 - IndexedDB offers encrypted local storage capability
 - Single codebase works across platforms
+- tosijs provides simple path-based state without boilerplate (cleaner than Redux/Zustand)
+- tosijs-schema schemas are JSON-serializable, useful for channel configuration validation
 - Tauri (if needed) provides native filesystem access without Electron's overhead
 
 **Alternatives considered**:
 - React Native (rejected: adds complexity, mobile not priority)
 - Electron (rejected: heavy, security concerns with Node integration)
 - Native desktop only (rejected: limits accessibility)
+- Pure tosijs without React (considered: tosijs can work standalone, but React ecosystem has more UI component libraries)
 
 ### D2: ATProto Integration via Official SDK
 
@@ -148,10 +158,15 @@ channel {
 
 ### D8: Local-First State Management
 
-**Decision**: All state stored locally in IndexedDB. No cloud sync.
+**Decision**: All state stored locally in IndexedDB with tosijs path-based reactivity. No cloud sync.
+
+**State Architecture**:
+- **react-tosijs** provides path-based observers for UI reactivity (e.g., `'channels.active.messages'`)
+- **tosijs-schema** validates channel configurations and message structures at runtime
+- **IndexedDB** (via `idb` wrapper) persists encrypted state
 
 **Stored data**:
-- Channel configurations (encrypted)
+- Channel configurations (encrypted, validated via tosijs-schema)
 - Message transmission state (which bits sent, draft buffer)
 - Received message history (encrypted)
 - Sender calibration data (median post lengths, etc.)
@@ -160,6 +175,8 @@ channel {
 - Privacy: no server-side data
 - Works offline for composition; online only for fetch/publish
 - Users can export/import encrypted backups
+- Path-based state updates are more direct than action/reducer patterns
+- tosijs-schema validation ensures channel URIs and configurations are well-formed before use
 
 ## Risks / Trade-offs
 

@@ -16,7 +16,7 @@
 
 - [ ] 1.1 Initialize TypeScript/React project with Vite
 - [ ] 1.2 Configure build tooling (ESLint, Prettier, TypeScript strict mode)
-- [ ] 1.3 Add core dependencies: @atproto/api, libsodium-wrappers, idb (IndexedDB wrapper)
+- [ ] 1.3 Add core dependencies: @atproto/api, libsodium-wrappers, idb, react-tosijs, tosijs-schema
 - [ ] 1.4 Set up project structure with adapter pattern (core/, adapters/, ui/, storage/)
 - [ ] 1.5 Configure Tauri for optional desktop builds
 

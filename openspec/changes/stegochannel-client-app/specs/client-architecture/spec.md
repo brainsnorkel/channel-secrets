@@ -1,11 +1,19 @@
 ## ADDED Requirements
 
 ### Requirement: Web application platform
-The system SHALL be implemented as a TypeScript/React web application that runs in modern browsers (Chrome, Firefox, Safari, Edge).
+The system SHALL be implemented as a TypeScript/React web application using the tosijs ecosystem that runs in modern browsers (Chrome, Firefox, Safari, Edge).
 
 #### Scenario: Browser compatibility
 - **WHEN** user opens the application in a supported browser
 - **THEN** all features SHALL function without plugins or extensions
+
+#### Scenario: State management
+- **WHEN** application state changes
+- **THEN** system SHALL use react-tosijs path-based observers for reactive updates
+
+#### Scenario: Runtime validation
+- **WHEN** processing channel configurations or message structures
+- **THEN** system SHALL validate using tosijs-schema with JSON-serializable schemas
 
 #### Scenario: Mobile browser support
 - **WHEN** user opens the application on a mobile browser

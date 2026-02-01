@@ -34,7 +34,12 @@ The StegoChannel protocol specification defines how to transmit covert messages 
 
 - **New codebase**: Reference implementation will be created (TypeScript web app, potentially with Tauri for desktop)
 - **Protocol clarifications**: Implementation may reveal ambiguities in SPEC.md requiring clarification
-- **Dependencies**: ATProto SDK (@atproto/api), RSS parser, cryptographic primitives (Web Crypto API + libsodium), secure storage
+- **Dependencies**:
+  - **UI**: React with react-tosijs for path-based state management
+  - **Validation**: tosijs-schema for runtime schema validation (~3kB, JSON-serializable)
+  - **Platform**: ATProto SDK (@atproto/api), RSS parser
+  - **Crypto**: Web Crypto API + libsodium-wrappers for XChaCha20-Poly1305
+  - **Storage**: idb (IndexedDB wrapper) for encrypted local storage
 - **Documentation**: SENDER_GUIDE.md and RECEIVER_GUIDE.md may evolve to reference the client app alongside CLI examples
 - **Security surface**: New attack vectors to consider: browser security model, credential storage, UI spoofing
 - **Platform scope**: Bluesky/ATProto for integrated send/receive; RSS/blogs for receive + assisted manual sending

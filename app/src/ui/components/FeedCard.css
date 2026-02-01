@@ -1,0 +1,129 @@
+.feed-card {
+  background: #ffffff;
+  border: 1px solid #e1e8ed;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 12px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+}
+
+.feed-card:hover {
+  border-color: #d0d7de;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.feed-card--signal {
+  border-left: 3px solid transparent;
+}
+
+.feed-card--signal::before {
+  content: '';
+  position: absolute;
+  left: -3px;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: linear-gradient(180deg, #4a9eff 0%, #7b68ee 100%);
+  opacity: 0.6;
+}
+
+.feed-card__header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.feed-card__avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.feed-card__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.feed-card__author {
+  font-weight: 600;
+  font-size: 15px;
+  color: #0f1419;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.feed-card__time {
+  font-size: 13px;
+  color: #536471;
+}
+
+.feed-card__content {
+  position: relative;
+}
+
+.feed-card__text {
+  font-size: 15px;
+  line-height: 1.5;
+  color: #0f1419;
+  margin: 0;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.feed-card__media-indicator {
+  margin-top: 12px;
+  padding: 8px 12px;
+  background: #f7f9fa;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #536471;
+  font-size: 13px;
+}
+
+.feed-card__media-indicator svg {
+  opacity: 0.7;
+}
+
+@media (prefers-color-scheme: dark) {
+  .feed-card {
+    background: #16181c;
+    border-color: #2f3336;
+  }
+
+  .feed-card:hover {
+    border-color: #3e4144;
+    box-shadow: 0 2px 8px rgba(255, 255, 255, 0.05);
+  }
+
+  .feed-card__author {
+    color: #e7e9ea;
+  }
+
+  .feed-card__time {
+    color: #71767b;
+  }
+
+  .feed-card__text {
+    color: #e7e9ea;
+  }
+
+  .feed-card__media-indicator {
+    background: #1e2124;
+    color: #71767b;
+  }
+}
