@@ -99,6 +99,85 @@
   opacity: 0.7;
 }
 
+/* Post type labels */
+.feed-card__label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  margin-bottom: 10px;
+  display: inline-block;
+}
+
+.feed-card__label--signal {
+  background: rgba(74, 158, 255, 0.1);
+  color: #4a9eff;
+}
+
+.feed-card__label--cover {
+  background: rgba(83, 100, 113, 0.1);
+  color: #536471;
+}
+
+.feed-card__label--testing {
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+}
+
+.feed-card__label--testing.feed-card__label--signal {
+  background: #0066cc;
+  color: white;
+}
+
+.feed-card__label--testing.feed-card__label--cover {
+  background: #536471;
+  color: white;
+}
+
+/* Testing mode card styling */
+.feed-card--testing {
+  border-width: 2px;
+}
+
+.feed-card--testing.feed-card--signal {
+  border-color: #4a9eff;
+}
+
+/* Decoded note / message attachment */
+.feed-card__note {
+  margin-top: 12px;
+  padding: 10px 12px;
+  background: #f7f9fa;
+  border-radius: 6px;
+  border-left: 3px solid #e1e8ed;
+}
+
+.feed-card__note-header {
+  font-size: 11px;
+  font-weight: 600;
+  color: #536471;
+  margin-bottom: 4px;
+}
+
+.feed-card__note-content {
+  font-size: 14px;
+  line-height: 1.4;
+  color: #0f1419;
+}
+
+.feed-card__note--testing {
+  background: #e6f0ff;
+  border-left-color: #0066cc;
+}
+
+.feed-card__note--testing .feed-card__note-header {
+  color: #0066cc;
+  font-family: var(--font-mono, monospace);
+  letter-spacing: 0.5px;
+}
+
 @media (prefers-color-scheme: dark) {
   .feed-card {
     background: #16181c;
@@ -125,5 +204,31 @@
   .feed-card__media-indicator {
     background: #1e2124;
     color: #71767b;
+  }
+
+  .feed-card__label--signal {
+    background: rgba(74, 158, 255, 0.2);
+  }
+
+  .feed-card__label--cover {
+    background: rgba(113, 118, 123, 0.2);
+    color: #71767b;
+  }
+
+  .feed-card__note {
+    background: #1e2124;
+    border-left-color: #2f3336;
+  }
+
+  .feed-card__note-header {
+    color: #71767b;
+  }
+
+  .feed-card__note-content {
+    color: #e7e9ea;
+  }
+
+  .feed-card__note--testing {
+    background: rgba(0, 102, 204, 0.15);
   }
 }

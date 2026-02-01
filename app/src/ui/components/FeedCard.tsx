@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTestingMode } from '../context';
 import './FeedCard.css';
 
 export interface FeedCardPost {
@@ -8,6 +9,7 @@ export interface FeedCardPost {
   timestamp: number;
   hasMedia?: boolean;
   isSignal?: boolean; // Hidden indicator for signal posts
+  decodedNote?: string; // Attached note (decoded message in production, explicit in testing)
 }
 
 export interface FeedCardProps {
@@ -19,6 +21,8 @@ export const FeedCard: React.FC<FeedCardProps> = ({
   post,
   showSignalIndicator = false
 }) => {
+  const testingMode = useTestingMode();
+
   const formattedTime = new Date(post.timestamp).toLocaleString('en-US', {
     month: 'short',
     day: 'numeric',
@@ -26,8 +30,36 @@ export const FeedCard: React.FC<FeedCardProps> = ({
     minute: '2-digit',
   });
 
+  // Determine if we should show the signal indicator
+  const showIndicator = showSignalIndicator || testingMode;
+
+  // Get the label based on mode
+  const getPostLabel = () => {
+    if (!showIndicator) return null;
+
+    if (testingMode) {
+      // Testing mode: explicit technical labels
+      return post.isSignal ? 'SIGNAL POST' : 'COVER POST';
+    } else if (showSignalIndicator && post.isSignal) {
+      // Production mode with indicator: subtle note label
+      return 'synced';
+    }
+    return null;
+  };
+
+  const postLabel = getPostLabel();
+
   return (
-    <article className={`feed-card ${post.isSignal && showSignalIndicator ? 'feed-card--signal' : ''}`}>
+    <article
+      className={`feed-card ${post.isSignal && showIndicator ? 'feed-card--signal' : ''} ${testingMode ? 'feed-card--testing' : ''}`}
+    >
+      {/* Post type label */}
+      {postLabel && (
+        <div className={`feed-card__label ${testingMode ? 'feed-card__label--testing' : ''} ${post.isSignal ? 'feed-card__label--signal' : 'feed-card__label--cover'}`}>
+          {postLabel}
+        </div>
+      )}
+
       <header className="feed-card__header">
         <div className="feed-card__avatar">
           {post.author.charAt(0).toUpperCase()}
@@ -51,6 +83,18 @@ export const FeedCard: React.FC<FeedCardProps> = ({
           </div>
         )}
       </div>
+
+      {/* Decoded note / message attachment */}
+      {post.decodedNote && (
+        <div className={`feed-card__note ${testingMode ? 'feed-card__note--testing' : ''}`}>
+          <div className="feed-card__note-header">
+            {testingMode ? 'DECODED MESSAGE' : 'Note'}
+          </div>
+          <div className="feed-card__note-content">
+            {post.decodedNote}
+          </div>
+        </div>
+      )}
     </article>
   );
 };

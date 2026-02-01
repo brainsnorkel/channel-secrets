@@ -1,0 +1,206 @@
+/* Feature Analysis Panel */
+.feature-analysis-panel {
+  border: 1px solid var(--color-border, #ddd);
+  border-radius: 8px;
+  background: var(--color-bg, white);
+  font-size: 13px;
+}
+
+.feature-analysis-panel.collapsed {
+  background: var(--color-bg-secondary, #f8f9fa);
+}
+
+/* Header */
+.feature-analysis-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.feature-analysis-panel[data-testing-mode="true"] .feature-analysis-header {
+  cursor: default;
+  background: var(--color-bg-info, #e8f4fd);
+  border-bottom: 1px solid var(--color-border-info, #b3d7f5);
+}
+
+.feature-analysis-header:hover {
+  background: var(--color-bg-secondary, #f8f9fa);
+}
+
+.feature-analysis-panel[data-testing-mode="true"] .feature-analysis-header:hover {
+  background: var(--color-bg-info, #e8f4fd);
+}
+
+.feature-analysis-header:focus {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--color-focus-ring, rgba(0, 102, 204, 0.4));
+}
+
+.feature-analysis-title {
+  font-weight: 500;
+  color: var(--color-text, #333);
+}
+
+.feature-analysis-summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+}
+
+.feature-analysis-bits {
+  font-family: var(--font-mono, monospace);
+  font-size: 12px;
+  padding: 2px 8px;
+  background: var(--color-bg-tertiary, #eee);
+  border-radius: 4px;
+  color: var(--color-text-secondary, #555);
+}
+
+.feature-analysis-match {
+  font-size: 12px;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.feature-analysis-match.match {
+  background: #d4edda;
+  color: #155724;
+}
+
+.feature-analysis-match.no-match {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.feature-analysis-toggle {
+  color: var(--color-text-secondary, #666);
+  font-size: 12px;
+}
+
+/* Body */
+.feature-analysis-body {
+  padding: 12px 14px;
+  border-top: 1px solid var(--color-border-light, #eee);
+}
+
+/* Feature rows */
+.feature-analysis-features {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.feature-analysis-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.feature-analysis-name {
+  font-weight: 500;
+  color: var(--color-text, #333);
+  min-width: 70px;
+}
+
+.feature-analysis-value {
+  color: var(--color-text-secondary, #666);
+  min-width: 80px;
+}
+
+.feature-analysis-arrow {
+  color: var(--color-text-tertiary, #999);
+}
+
+.feature-analysis-bit {
+  font-family: var(--font-mono, monospace);
+  font-weight: 600;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+}
+
+.feature-analysis-bit.bit-0 {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.feature-analysis-bit.bit-1 {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.feature-analysis-description {
+  color: var(--color-text-tertiary, #999);
+  font-size: 11px;
+}
+
+/* Encoded summary */
+.feature-analysis-encoded {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: var(--color-bg-secondary, #f8f9fa);
+  border-radius: 6px;
+  margin-bottom: 12px;
+}
+
+.feature-analysis-label {
+  font-size: 12px;
+  color: var(--color-text-secondary, #666);
+}
+
+.feature-analysis-code {
+  font-family: var(--font-mono, monospace);
+  font-size: 14px;
+  font-weight: 600;
+  padding: 2px 8px;
+  background: var(--color-bg, white);
+  border: 1px solid var(--color-border, #ddd);
+  border-radius: 4px;
+}
+
+/* Tips */
+.feature-analysis-tips {
+  padding: 10px 12px;
+  background: #fff8e6;
+  border: 1px solid #ffd666;
+  border-radius: 6px;
+}
+
+.feature-analysis-tips-label {
+  font-weight: 500;
+  font-size: 12px;
+  color: #8a6d3b;
+}
+
+.feature-analysis-tips-list {
+  margin: 6px 0 0 0;
+  padding-left: 20px;
+  font-size: 12px;
+  color: #8a6d3b;
+}
+
+.feature-analysis-tips-list li {
+  margin: 4px 0;
+}
+
+/* SPEC reference in testing mode */
+.feature-analysis-spec-ref {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border-light, #eee);
+  font-size: 11px;
+  color: var(--color-text-tertiary, #999);
+  font-family: var(--font-mono, monospace);
+}
