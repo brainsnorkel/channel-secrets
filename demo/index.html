@@ -627,6 +627,70 @@ body {
   cursor: pointer;
 }
 
+/* Keyboard Help Overlay */
+.keyboard-help-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.keyboard-help-content {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: var(--spacing-lg);
+  max-width: 360px;
+}
+
+.keyboard-help-content h3 {
+  margin-bottom: var(--spacing-md);
+  color: var(--accent-signal);
+}
+
+.shortcut-grid {
+  display: grid;
+  gap: var(--spacing-sm);
+}
+
+.shortcut {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.shortcut kbd {
+  background: var(--bg-tertiary);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  min-width: 90px;
+  text-align: center;
+}
+
+/* Keyboard Hint Button */
+.keyboard-hint {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 4px 8px;
+  cursor: pointer;
+  color: var(--text-secondary);
+}
+
+.keyboard-hint:hover {
+  border-color: var(--accent-signal);
+  color: var(--accent-signal);
+}
+
+.keyboard-hint kbd {
+  font-family: var(--font-mono);
+}
+
 /* ============================================
    RECEIVER VIEW
    ============================================ */
@@ -1287,10 +1351,11 @@ body {
 
     <div class="header-right">
       <div class="key-display" title="Channel Key">Key: <span id="keyDisplay">demo123</span></div>
-      <button class="btn" onclick="openAboutModal()">❓ How It Works</button>
-      <button class="btn" onclick="openScenarioModal()">📋 Scenarios</button>
-      <button class="btn" onclick="resetDemo()">🔄 Reset</button>
-      <button class="btn btn-icon" id="inspectorToggle" onclick="toggleInspector()" title="Toggle Inspector (I)">🔍</button>
+      <button class="btn" onclick="openAboutModal()">How It Works</button>
+      <button class="btn" onclick="openScenarioModal()">Scenarios</button>
+      <button class="btn" onclick="resetDemo()">Reset</button>
+      <button onclick="toggleKeyboardHelp()" class="keyboard-hint" title="Keyboard shortcuts"><kbd>?</kbd></button>
+      <button class="btn btn-icon" id="inspectorToggle" onclick="toggleInspector()" title="Toggle Inspector (I)">I</button>
     </div>
   </header>
 
@@ -1397,6 +1462,7 @@ body {
             <div class="draft-actions">
               <button class="btn btn-success" id="publishBtn" onclick="publishPost()">Publish</button>
               <button class="btn" onclick="publishAsCover()">Publish as Cover</button>
+              <button class="btn" onclick="saveToDraftBuffer()">Save (S)</button>
               <button class="btn" onclick="discardDraft()">Discard</button>
             </div>
           </div>
@@ -2625,6 +2691,7 @@ async function loadScenario(scenario) {
 async function resetDemo() {
   // Reset state
   AppState.posts = [];
+  AppState.draftBuffer = [];
   AppState.sender.bitsSent = 0;
   AppState.sender.signalCount = 0;
   AppState.sender.coverCount = 0;
@@ -2675,17 +2742,67 @@ function escapeHtml(text) {
 
 // Keyboard shortcuts
 document.addEventListener('keydown', (e) => {
-  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-
-  if (e.key === 'i' || e.key === 'I') {
-    toggleInspector();
-  }
   if (e.key === 'Escape') {
     closeAboutModal();
     closeScenarioModal();
     hideStepOverlay();
+    const help = document.getElementById('keyboardHelp');
+    if (help) help.remove();
+    return;
+  }
+  const inInput = e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA';
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+    e.preventDefault();
+    publishPost();
+    return;
+  }
+  if (inInput) return;
+  switch (e.key.toLowerCase()) {
+    case 'i': toggleInspector(); break;
+    case 'p': publishPost(); break;
+    case 'c': publishAsCover(); break;
+    case 's': saveToDraftBuffer(); break;
+    case 'd': discardDraft(); break;
+    case 'n': document.getElementById('draftTextarea')?.focus(); break;
+    case 'e': advanceEpoch(); break;
+    case '?': toggleKeyboardHelp(); break;
   }
 });
+
+function advanceEpoch() {
+  Beacon.nextEpoch();
+}
+
+function toggleKeyboardHelp() {
+  let helpEl = document.getElementById('keyboardHelp');
+  if (helpEl) {
+    helpEl.remove();
+    return;
+  }
+  helpEl = document.createElement('div');
+  helpEl.id = 'keyboardHelp';
+  helpEl.className = 'keyboard-help-overlay';
+  helpEl.innerHTML = `
+    <div class="keyboard-help-content">
+      <h3>Keyboard Shortcuts</h3>
+      <div class="shortcut-grid">
+        <div class="shortcut"><kbd>Ctrl+Enter</kbd> Publish signal</div>
+        <div class="shortcut"><kbd>P</kbd> Publish draft</div>
+        <div class="shortcut"><kbd>C</kbd> Publish as cover</div>
+        <div class="shortcut"><kbd>S</kbd> Save to buffer</div>
+        <div class="shortcut"><kbd>D</kbd> Discard draft</div>
+        <div class="shortcut"><kbd>N</kbd> New draft</div>
+        <div class="shortcut"><kbd>E</kbd> Advance epoch</div>
+        <div class="shortcut"><kbd>I</kbd> Toggle inspector</div>
+        <div class="shortcut"><kbd>?</kbd> This help</div>
+        <div class="shortcut"><kbd>Esc</kbd> Close</div>
+      </div>
+    </div>`;
+  helpEl.onclick = (e) => {
+    if (e.target === helpEl) helpEl.remove();
+  };
+  document.body.appendChild(helpEl);
+}
 
 // Message input change
 document.getElementById('messageInput')?.addEventListener('change', async (e) => {
