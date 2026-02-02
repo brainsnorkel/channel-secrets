@@ -484,9 +484,147 @@ body {
   margin-bottom: var(--spacing-xs);
 }
 
+.suggestion-match {
+  color: var(--accent-signal);
+  font-weight: 500;
+}
+
+.suggestion-match kbd {
+  background: var(--bg-tertiary);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  margin-left: 8px;
+}
+
+.suggestion-header {
+  display: flex;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-sm);
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+}
+
+.bits-needed {
+  color: var(--accent-warning);
+}
+
+.bits-current {
+  color: var(--text-secondary);
+}
+
+.bits-diff {
+  color: var(--accent-info);
+  margin-left: auto;
+}
+
+.suggestion-paths {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
 .suggestion-item {
   color: var(--text-secondary);
   padding: var(--spacing-xs) 0;
+}
+
+.suggestion-item.easiest {
+  color: var(--accent-signal);
+}
+
+.easiest-badge {
+  background: var(--accent-signal);
+  color: var(--bg-primary);
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  margin-right: 4px;
+}
+
+/* Draft Buffer Panel */
+.draft-buffer-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: var(--spacing-md);
+  margin-top: var(--spacing-md);
+}
+
+.draft-buffer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-sm);
+  font-weight: 500;
+}
+
+.draft-match-alert {
+  background: var(--accent-signal);
+  color: var(--bg-primary);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.draft-buffer-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.draft-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: var(--bg-secondary);
+  border-radius: 4px;
+  font-size: 0.85rem;
+}
+
+.draft-item.matches {
+  border: 1px solid var(--accent-signal);
+  background: rgba(0, 212, 170, 0.1);
+}
+
+.draft-bits {
+  font-family: var(--font-mono);
+  color: var(--accent-info);
+  min-width: 60px;
+}
+
+.draft-preview {
+  flex: 1;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.use-draft-btn {
+  background: var(--accent-signal);
+  color: var(--bg-primary);
+  border: none;
+  padding: 2px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.delete-draft-btn {
+  background: transparent;
+  color: var(--text-muted);
+  border: none;
+  padding: 2px 6px;
+  cursor: pointer;
 }
 
 /* ============================================
@@ -1230,12 +1368,20 @@ body {
                 </span>
               </div>
               <div class="feature-row">
+                <span class="feature-label">First Word</span>
+                <span class="feature-value">
+                  <span id="fwordValue">other</span>
+                  <span class="feature-bit bit-1" id="fwordHighBit">1</span>
+                  <span class="feature-bit bit-1" id="fwordLowBit">1</span>
+                </span>
+              </div>
+              <div class="feature-row">
                 <span class="feature-label">Extracted</span>
-                <span class="feature-value mono" id="extractedBits">000</span>
+                <span class="feature-value mono" id="extractedBits">00011</span>
               </div>
               <div class="feature-row">
                 <span class="feature-label">Needed</span>
-                <span class="feature-value mono" id="neededBits">010</span>
+                <span class="feature-value mono" id="neededBits">01001</span>
               </div>
             </div>
 
@@ -1439,11 +1585,12 @@ body {
         <ol style="color: var(--text-secondary); margin-bottom: var(--spacing-lg); padding-left: var(--spacing-lg);">
           <li style="margin-bottom: var(--spacing-sm);">Enter a secret message (e.g., "HELLO")</li>
           <li style="margin-bottom: var(--spacing-sm);">The message is converted to bits: <code style="background: var(--bg-card); padding: 2px 6px; border-radius: 3px;">01001000 01000101...</code></li>
-          <li style="margin-bottom: var(--spacing-sm);">Write posts naturally—each post's <strong>features</strong> encode 3 bits:
+          <li style="margin-bottom: var(--spacing-sm);">Write posts naturally—each post's <strong>features</strong> encode 5 bits:
             <ul style="margin-top: var(--spacing-xs); list-style: disc; padding-left: var(--spacing-md);">
               <li><strong>Length ≥ 50 chars</strong> → bit 1, otherwise → bit 0</li>
               <li><strong>Has media</strong> → bit 1, otherwise → bit 0</li>
               <li><strong>Contains ?</strong> → bit 1, otherwise → bit 0</li>
+              <li><strong>First word category</strong> → 2 bits (pronoun=00, article=01, verb=10, other=11)</li>
             </ul>
           </li>
           <li style="margin-bottom: var(--spacing-sm);">When a post's bits match the next needed bits → publish as <span style="color: var(--accent-signal); font-weight: 600;">SIGNAL</span></li>
@@ -1469,7 +1616,7 @@ body {
 
         <h3 style="color: var(--accent-warning); margin-bottom: var(--spacing-sm);">⏱️ Why So Slow?</h3>
         <p style="color: var(--text-secondary); margin-bottom: var(--spacing-lg);">
-          At ~3 bits per signal post and ~25% signal rate, transmitting "HELLO" (40 bits) requires roughly 14 signal posts spread over days of normal posting.
+          At ~5 bits per signal post and ~25% signal rate, transmitting "HELLO" (40 bits) requires roughly 8 signal posts spread over days of normal posting.
           <strong style="color: var(--text-primary);">This slowness is the feature, not a bug</strong>—it makes the channel indistinguishable from normal activity.
         </p>
 
@@ -1548,6 +1695,9 @@ const AppState = {
 
   // Posts
   posts: [],
+
+  // Draft buffer for auto-matching
+  draftBuffer: [],
 
   // Sender state
   sender: {
@@ -1670,11 +1820,14 @@ const Crypto = {
 // PROTOCOL IMPLEMENTATION
 // ============================================
 const Protocol = {
-  // Extract features from post content
+  // Extract features from post content (5 bits: length, media, question, fword_high, fword_low)
   extractFeatures(content, hasMedia) {
     const lengthBit = content.length >= 50 ? 1 : 0;
     const mediaBit = hasMedia ? 1 : 0;
     const questionBit = content.includes('?') ? 1 : 0;
+    const fwordBits = this.extractFirstWordBits(content);
+    const fwordHigh = (fwordBits >> 1) & 1;
+    const fwordLow = fwordBits & 1;
 
     return {
       length: content.length,
@@ -1683,9 +1836,29 @@ const Protocol = {
       mediaBit,
       hasQuestion: content.includes('?'),
       questionBit,
-      bits: (lengthBit << 2) | (mediaBit << 1) | questionBit,
-      bitsString: `${lengthBit}${mediaBit}${questionBit}`
+      fwordCategory: fwordBits,
+      fwordHigh,
+      fwordLow,
+      bits: (lengthBit << 4) | (mediaBit << 3) | (questionBit << 2) | (fwordHigh << 1) | fwordLow,
+      bitsString: `${lengthBit}${mediaBit}${questionBit}${fwordHigh}${fwordLow}`
     };
+  },
+
+  // Extract first word category bits (2 bits)
+  extractFirstWordBits(text) {
+    const PRONOUNS = ['i', 'me', 'my', 'mine', 'we', 'us', 'our', 'you', 'your', 'he', 'him', 'his', 'she', 'her', 'they', 'them', 'their', 'it', 'its', 'who', 'what', 'which'];
+    const ARTICLES = ['a', 'an', 'the', 'this', 'that', 'these', 'those', 'some', 'any', 'no', 'every', 'each'];
+    const VERBS = ['is', 'are', 'was', 'were', 'be', 'been', 'am', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'can', 'could', 'may', 'might', 'must', 'go', 'get', 'make', 'see', 'know', 'think', 'just', 'want', 'need', 'try'];
+
+    const trimmed = text.trim();
+    const match = trimmed.match(/^[a-zA-Z]+/);
+    if (!match) return 0b11;
+
+    const firstWord = match[0].toLowerCase();
+    if (PRONOUNS.includes(firstWord)) return 0b00;
+    if (ARTICLES.includes(firstWord)) return 0b01;
+    if (VERBS.includes(firstWord)) return 0b10;
+    return 0b11;
   },
 
   // Check if post is a signal (hash < threshold)
@@ -1728,13 +1901,13 @@ const Protocol = {
     return message;
   },
 
-  // Get next required bits from message
+  // Get next required bits from message (5 bits per signal post)
   getNextRequiredBits(messageBits, bitsSent) {
     const bits = [];
-    for (let i = 0; i < 3 && bitsSent + i < messageBits.length; i++) {
+    for (let i = 0; i < 5 && bitsSent + i < messageBits.length; i++) {
       bits.push(messageBits[bitsSent + i]);
     }
-    while (bits.length < 3) bits.push(0);
+    while (bits.length < 5) bits.push(0);
     return bits.join('');
   },
 
@@ -1852,8 +2025,8 @@ async function createPost(content, hasMedia, forceSignal = null) {
 
   if (post.isSignal) {
     AppState.sender.signalCount++;
-    // Add bits to sender's sent count
-    const bitsToAdd = Math.min(3, AppState.sender.messageBits.length - AppState.sender.bitsSent);
+    // Add bits to sender's sent count (5 bits per signal post)
+    const bitsToAdd = Math.min(5, AppState.sender.messageBits.length - AppState.sender.bitsSent);
     AppState.sender.bitsSent += bitsToAdd;
 
     // Add bits to receiver's buffer
@@ -1885,6 +2058,7 @@ function updateUI() {
   updateProgressDisplay();
   updateReceiverDisplay();
   renderFeeds();
+  updateDraftBufferUI();
   notifyChange();
 }
 
@@ -1972,6 +2146,14 @@ function updateFeatureDisplay() {
   document.getElementById('questionBit').textContent = features.questionBit;
   document.getElementById('questionBit').className = `feature-bit bit-${features.questionBit}`;
 
+  // Update fword display
+  const fwordLabels = ['pronoun', 'article', 'verb', 'other'];
+  document.getElementById('fwordValue').textContent = fwordLabels[features.fwordCategory];
+  document.getElementById('fwordHighBit').textContent = features.fwordHigh;
+  document.getElementById('fwordHighBit').className = `feature-bit bit-${features.fwordHigh}`;
+  document.getElementById('fwordLowBit').textContent = features.fwordLow;
+  document.getElementById('fwordLowBit').className = `feature-bit bit-${features.fwordLow}`;
+
   document.getElementById('extractedBits').textContent = features.bitsString;
 
   // Get needed bits
@@ -1994,39 +2176,44 @@ function updateFeatureDisplay() {
 }
 
 function updateSuggestions(features, neededBits) {
-  const suggestions = [];
   const needed = neededBits.split('').map(Number);
-
-  // Length suggestion
-  if (needed[0] === 1 && features.lengthBit === 0) {
-    suggestions.push(`Add ${50 - features.length}+ characters to set the length bit`);
-  } else if (needed[0] === 0 && features.lengthBit === 1) {
-    suggestions.push(`Remove ${features.length - 49}+ characters to clear the length bit`);
-  }
-
-  // Media suggestion
-  if (needed[1] === 1 && features.mediaBit === 0) {
-    suggestions.push('Check "Has media" to set the media bit');
-  } else if (needed[1] === 0 && features.mediaBit === 1) {
-    suggestions.push('Uncheck "Has media" to clear the media bit');
-  }
-
-  // Question suggestion
-  if (needed[2] === 1 && features.questionBit === 0) {
-    suggestions.push('Add a question mark (?) to set the question bit');
-  } else if (needed[2] === 0 && features.questionBit === 1) {
-    suggestions.push('Remove the question mark to clear the question bit');
-  }
-
+  const current = features.bitsString.split('').map(Number);
   const suggestionsEl = document.getElementById('suggestions');
-  const suggestionTextEl = document.getElementById('suggestionText');
 
-  if (suggestions.length === 0) {
-    suggestionsEl.style.display = 'none';
-  } else {
+  if (features.bitsString === neededBits) {
     suggestionsEl.style.display = 'block';
-    suggestionTextEl.innerHTML = suggestions.map(s => `<div class="suggestion-item">• ${s}</div>`).join('');
+    suggestionsEl.innerHTML = '<div class="suggestion-match">Ready to publish. <kbd>Ctrl+Enter</kbd></div>';
+    return;
   }
+
+  const paths = [];
+  if (needed[0] !== current[0]) {
+    paths.push({ action: needed[0] === 1 ? `Add ${50 - features.length} chars` : `Remove ${features.length - 49} chars`, effort: Math.abs(50 - features.length), type: 'len' });
+  }
+  if (needed[1] !== current[1]) {
+    paths.push({ action: needed[1] === 1 ? 'Check "Has media"' : 'Uncheck "Has media"', effort: 1, type: 'media' });
+  }
+  if (needed[2] !== current[2]) {
+    paths.push({ action: needed[2] === 1 ? 'Add ?' : 'Remove ?', effort: 1, type: 'qmark' });
+  }
+  if (needed.length > 3 && (needed[3] !== current[3] || needed[4] !== current[4])) {
+    const neededCat = (needed[3] << 1) | needed[4];
+    const cats = ['pronoun (I, we, you...)', 'article (a, the, this...)', 'verb (is, have, do...)', 'other word'];
+    paths.push({ action: `Start with ${cats[neededCat]}`, effort: 3, type: 'fword' });
+  }
+
+  paths.sort((a, b) => a.effort - b.effort);
+
+  suggestionsEl.style.display = 'block';
+  suggestionsEl.innerHTML = `
+    <div class="suggestion-header">
+      <span class="bits-needed">Need: <code>${neededBits}</code></span>
+      <span class="bits-current">Have: <code>${features.bitsString}</code></span>
+      <span class="bits-diff">${paths.length} change${paths.length !== 1 ? 's' : ''}</span>
+    </div>
+    <div class="suggestion-paths">
+      ${paths.map((p, i) => `<div class="suggestion-item ${i === 0 ? 'easiest' : ''}">${i === 0 ? '<span class="easiest-badge">Easiest</span>' : ''} ${p.action}</div>`).join('')}
+    </div>`;
 }
 
 function renderFeeds() {
@@ -2128,6 +2315,63 @@ function discardDraft() {
   document.getElementById('draftTextarea').value = '';
   document.getElementById('hasMedia').checked = false;
   updateFeatureDisplay();
+}
+
+function saveToDraftBuffer() {
+  const content = document.getElementById('draftTextarea').value.trim();
+  if (!content) return;
+  const hasMedia = document.getElementById('hasMedia').checked;
+  const features = Protocol.extractFeatures(content, hasMedia);
+  if (AppState.draftBuffer.some(d => d.content === content)) return;
+  AppState.draftBuffer.push({ content, hasMedia, features, savedAt: Date.now() });
+  logEvent('draft', `Saved draft with bits ${features.bitsString}`);
+  document.getElementById('draftTextarea').value = '';
+  document.getElementById('hasMedia').checked = false;
+  updateFeatureDisplay();
+  updateDraftBufferUI();
+}
+
+function useDraftFromBuffer(index) {
+  const draft = AppState.draftBuffer[index];
+  AppState.draftBuffer.splice(index, 1);
+  document.getElementById('draftTextarea').value = draft.content;
+  document.getElementById('hasMedia').checked = draft.hasMedia;
+  updateFeatureDisplay();
+  updateDraftBufferUI();
+  logEvent('draft', 'Loaded matching draft from buffer');
+}
+
+function updateDraftBufferUI() {
+  let bufferEl = document.getElementById('draftBufferPanel');
+  if (!bufferEl) {
+    const composeArea = document.querySelector('.draft-section');
+    if (composeArea) {
+      bufferEl = document.createElement('div');
+      bufferEl.id = 'draftBufferPanel';
+      bufferEl.className = 'draft-buffer-panel';
+      composeArea.parentNode.insertBefore(bufferEl, composeArea.nextSibling);
+    }
+  }
+  if (!bufferEl || AppState.draftBuffer.length === 0) {
+    if (bufferEl) bufferEl.style.display = 'none';
+    return;
+  }
+  const neededBits = Protocol.getNextRequiredBits(AppState.sender.messageBits, AppState.sender.bitsSent);
+  bufferEl.style.display = 'block';
+  bufferEl.innerHTML = `
+    <div class="draft-buffer-header">Draft Buffer (${AppState.draftBuffer.length})
+      ${AppState.draftBuffer.some(d => d.features.bitsString === neededBits) ? '<span class="draft-match-alert">Match!</span>' : ''}
+    </div>
+    <div class="draft-buffer-list">
+      ${AppState.draftBuffer.map((d, i) => `
+        <div class="draft-item ${d.features.bitsString === neededBits ? 'matches' : ''}">
+          <span class="draft-bits">${d.features.bitsString}</span>
+          <span class="draft-preview">${d.content.slice(0, 25)}${d.content.length > 25 ? '...' : ''}</span>
+          ${d.features.bitsString === neededBits
+            ? `<button onclick="useDraftFromBuffer(${i})" class="use-draft-btn">Use</button>`
+            : `<button onclick="AppState.draftBuffer.splice(${i}, 1); updateDraftBufferUI();" class="delete-draft-btn">x</button>`}
+        </div>`).join('')}
+    </div>`;
 }
 
 function selectPost(postId) {

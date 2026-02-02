@@ -56,6 +56,8 @@ Content: "Tuesday 3pm"
 ## Documentation
 
 - [**Interactive Demo**](../demo/index.html) — Try the protocol in your browser (no install required)
+- [**Setup Guide**](SETUP_GUIDE.md) — Step-by-step guide to establish communication
+- [Technical Paper](PAPER.md) — Semi-academic overview of the protocol
 - [Protocol Specification](SPEC.md) — Full technical spec (implement from this)
 - [Worked Example](WORKED_EXAMPLE.md) — End-to-end example with actual values
 - [Sender Guide](SENDER_GUIDE.md) — How to transmit messages
