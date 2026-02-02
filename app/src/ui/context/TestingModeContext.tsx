@@ -3,13 +3,13 @@ import type { ReactNode } from 'react';
 
 /**
  * Testing mode context for self-documenting UI features.
- * When active, bypasses stealth constraints and shows all explanations.
+ * When active, shows all explanations and assistive features.
  *
- * Activation precedence (first match wins):
- * 1. URL param: ?testing=1
- * 2. Environment: import.meta.env.VITE_TESTING_MODE === 'true'
- * 3. localStorage: stego_testing_mode === 'true'
- * 4. Default: false (production mode)
+ * Override precedence (first match wins):
+ * 1. URL param: ?testing=0 or ?testing=false to disable
+ * 2. Environment: import.meta.env.VITE_TESTING_MODE
+ * 3. localStorage: stego_testing_mode
+ * 4. Default: true (full help mode - always show assistive features)
  */
 
 const TestingModeContext = createContext<boolean>(false);
@@ -48,8 +48,8 @@ function getTestingModeState(): boolean {
     }
   }
 
-  // 4. Default: production mode
-  return false;
+  // 4. Default: always show full help and assistive features
+  return true;
 }
 
 interface TestingModeProviderProps {

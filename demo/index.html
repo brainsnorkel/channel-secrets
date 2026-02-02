@@ -1,0 +1,2480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>StegoChannel Interactive Demo</title>
+  <style>
+/* ============================================
+   CSS RESET & VARIABLES
+   ============================================ */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  /* Colors */
+  --bg-primary: #1a1a2e;
+  --bg-secondary: #16213e;
+  --bg-tertiary: #0f3460;
+  --bg-card: #1f2940;
+  --text-primary: #eaeaea;
+  --text-secondary: #a0a0a0;
+  --text-muted: #6a6a8a;
+  --accent-signal: #00d4aa;
+  --accent-cover: #6c757d;
+  --accent-warning: #ffc107;
+  --accent-error: #dc3545;
+  --accent-info: #17a2b8;
+  --accent-highlight: #7c3aed;
+  --border-color: #2d3748;
+
+  /* Spacing */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+
+  /* Typography */
+  --font-mono: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', monospace;
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+  /* Layout */
+  --header-height: 60px;
+  --inspector-width: 380px;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+  line-height: 1.5;
+}
+
+/* ============================================
+   HEADER
+   ============================================ */
+.header {
+  height: var(--header-height);
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--spacing-lg);
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.logo {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--accent-signal);
+}
+
+.beacon-status {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: var(--bg-tertiary);
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-family: var(--font-mono);
+}
+
+.beacon-mode {
+  color: var(--accent-info);
+  text-transform: uppercase;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.epoch-display {
+  color: var(--text-secondary);
+}
+
+.header-center {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.mode-toggle {
+  display: flex;
+  background: var(--bg-tertiary);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.mode-btn {
+  padding: var(--spacing-xs) var(--spacing-md);
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all 0.2s;
+}
+
+.mode-btn.active {
+  background: var(--accent-highlight);
+  color: white;
+}
+
+.mode-btn:hover:not(.active) {
+  background: var(--bg-card);
+}
+
+.speed-control {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.speed-slider {
+  width: 80px;
+  accent-color: var(--accent-highlight);
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.key-display {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: var(--bg-card);
+  border-radius: 4px;
+}
+
+.btn {
+  padding: var(--spacing-xs) var(--spacing-md);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all 0.2s;
+}
+
+.btn:hover {
+  background: var(--bg-tertiary);
+  border-color: var(--accent-highlight);
+}
+
+.btn-primary {
+  background: var(--accent-highlight);
+  border-color: var(--accent-highlight);
+}
+
+.btn-primary:hover {
+  background: #6d28d9;
+}
+
+.btn-success {
+  background: var(--accent-signal);
+  border-color: var(--accent-signal);
+  color: var(--bg-primary);
+}
+
+.btn-icon {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ============================================
+   MAIN LAYOUT
+   ============================================ */
+.main-container {
+  display: flex;
+  margin-top: var(--header-height);
+  height: calc(100vh - var(--header-height));
+}
+
+.split-view {
+  display: flex;
+  flex: 1;
+  transition: margin-right 0.3s ease;
+}
+
+.split-view.inspector-open {
+  margin-right: var(--inspector-width);
+}
+
+.panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--border-color);
+  overflow: hidden;
+}
+
+.panel:last-child {
+  border-right: none;
+}
+
+.panel-header {
+  padding: var(--spacing-md);
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.panel-title {
+  font-size: 1rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.panel-title .icon {
+  font-size: 1.2rem;
+}
+
+.panel-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--spacing-md);
+}
+
+/* ============================================
+   SENDER VIEW
+   ============================================ */
+.message-input-section {
+  background: var(--bg-card);
+  border-radius: 8px;
+  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+}
+
+.message-input-section h3 {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.message-input {
+  width: 100%;
+  padding: var(--spacing-sm);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 1rem;
+  resize: none;
+}
+
+.message-input:focus {
+  outline: none;
+  border-color: var(--accent-highlight);
+}
+
+.binary-display {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: var(--spacing-sm);
+  word-break: break-all;
+  background: var(--bg-primary);
+  padding: var(--spacing-sm);
+  border-radius: 4px;
+}
+
+.progress-section {
+  background: var(--bg-card);
+  border-radius: 8px;
+  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+}
+
+.progress-bar-container {
+  background: var(--bg-primary);
+  border-radius: 4px;
+  height: 8px;
+  overflow: hidden;
+  margin: var(--spacing-sm) 0;
+}
+
+.progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent-signal), var(--accent-highlight));
+  transition: width 0.3s ease;
+}
+
+.progress-stats {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.post-counter {
+  display: flex;
+  gap: var(--spacing-lg);
+  margin-top: var(--spacing-sm);
+}
+
+.counter-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.counter-item .signal {
+  color: var(--accent-signal);
+}
+
+.counter-item .cover {
+  color: var(--accent-cover);
+}
+
+.draft-section {
+  background: var(--bg-card);
+  border-radius: 8px;
+  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+}
+
+.draft-textarea {
+  width: 100%;
+  min-height: 80px;
+  padding: var(--spacing-sm);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  resize: vertical;
+}
+
+.draft-textarea:focus {
+  outline: none;
+  border-color: var(--accent-highlight);
+}
+
+.media-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-sm);
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.media-toggle input {
+  accent-color: var(--accent-highlight);
+}
+
+.feature-display {
+  background: var(--bg-primary);
+  border-radius: 6px;
+  padding: var(--spacing-md);
+  margin-top: var(--spacing-md);
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+}
+
+.feature-row {
+  display: flex;
+  justify-content: space-between;
+  padding: var(--spacing-xs) 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.feature-row:last-child {
+  border-bottom: none;
+}
+
+.feature-label {
+  color: var(--text-secondary);
+}
+
+.feature-value {
+  color: var(--text-primary);
+}
+
+.feature-bit {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  line-height: 20px;
+  text-align: center;
+  border-radius: 4px;
+  font-weight: 600;
+  margin-left: var(--spacing-xs);
+}
+
+.feature-bit.bit-0 {
+  background: var(--accent-cover);
+  color: white;
+}
+
+.feature-bit.bit-1 {
+  background: var(--accent-signal);
+  color: var(--bg-primary);
+}
+
+.match-display {
+  margin-top: var(--spacing-md);
+  padding: var(--spacing-sm);
+  border-radius: 6px;
+  text-align: center;
+  font-weight: 600;
+}
+
+.match-display.match {
+  background: rgba(0, 212, 170, 0.2);
+  color: var(--accent-signal);
+  border: 1px solid var(--accent-signal);
+}
+
+.match-display.no-match {
+  background: rgba(108, 117, 125, 0.2);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+}
+
+.draft-actions {
+  display: flex;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-md);
+}
+
+.suggestions {
+  background: var(--bg-tertiary);
+  border-radius: 6px;
+  padding: var(--spacing-sm) var(--spacing-md);
+  margin-top: var(--spacing-md);
+  font-size: 0.85rem;
+}
+
+.suggestion-title {
+  color: var(--accent-warning);
+  font-weight: 600;
+  margin-bottom: var(--spacing-xs);
+}
+
+.suggestion-item {
+  color: var(--text-secondary);
+  padding: var(--spacing-xs) 0;
+}
+
+/* ============================================
+   RECEIVER VIEW
+   ============================================ */
+.decode-status {
+  background: var(--bg-card);
+  border-radius: 8px;
+  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+}
+
+.decode-status h3 {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.frame-display {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  background: var(--bg-primary);
+  border-radius: 6px;
+  padding: var(--spacing-md);
+}
+
+.frame-section {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-xs) 0;
+}
+
+.frame-label {
+  color: var(--text-muted);
+  min-width: 60px;
+}
+
+.frame-value {
+  color: var(--text-primary);
+}
+
+.frame-value.pending {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.frame-value.complete {
+  color: var(--accent-signal);
+}
+
+.frame-value.error {
+  color: var(--accent-error);
+}
+
+.bit-buffer {
+  margin-top: var(--spacing-md);
+  padding: var(--spacing-sm);
+  background: var(--bg-secondary);
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  word-break: break-all;
+}
+
+.bit-buffer .byte {
+  display: inline-block;
+  margin-right: var(--spacing-sm);
+  padding: 2px 4px;
+  background: var(--bg-tertiary);
+  border-radius: 2px;
+}
+
+.decoded-message {
+  margin-top: var(--spacing-md);
+  padding: var(--spacing-md);
+  background: rgba(0, 212, 170, 0.1);
+  border: 1px solid var(--accent-signal);
+  border-radius: 6px;
+  font-size: 1.1rem;
+  text-align: center;
+}
+
+.decoded-message.partial {
+  background: var(--bg-secondary);
+  border-color: var(--border-color);
+}
+
+.waiting-status {
+  text-align: center;
+  color: var(--text-muted);
+  padding: var(--spacing-md);
+  font-style: italic;
+}
+
+/* ============================================
+   FEED / TIMELINE
+   ============================================ */
+.feed {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.post-card {
+  background: var(--bg-card);
+  border-radius: 8px;
+  padding: var(--spacing-md);
+  border: 1px solid var(--border-color);
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.post-card:hover {
+  border-color: var(--accent-highlight);
+}
+
+.post-card.signal {
+  border-left: 3px solid var(--accent-signal);
+}
+
+.post-card.cover {
+  opacity: 0.7;
+}
+
+.post-card.selected {
+  border-color: var(--accent-highlight);
+  box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.3);
+}
+
+.post-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-sm);
+}
+
+.post-author {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--bg-tertiary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.author-name {
+  font-weight: 600;
+}
+
+.post-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.signal-badge {
+  background: var(--accent-signal);
+  color: var(--bg-primary);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.cover-badge {
+  background: var(--accent-cover);
+  color: white;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.post-content {
+  color: var(--text-primary);
+  line-height: 1.5;
+}
+
+.post-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: var(--spacing-sm);
+  padding-top: var(--spacing-sm);
+  border-top: 1px solid var(--border-color);
+  font-size: 0.8rem;
+}
+
+.extracted-bits {
+  font-family: var(--font-mono);
+  color: var(--accent-signal);
+  background: rgba(0, 212, 170, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.media-indicator {
+  color: var(--accent-info);
+}
+
+.post-highlight {
+  animation: highlight 1s ease-out;
+}
+
+@keyframes highlight {
+  0% {
+    background: rgba(0, 212, 170, 0.3);
+  }
+  100% {
+    background: var(--bg-card);
+  }
+}
+
+/* ============================================
+   INSPECTOR PANEL
+   ============================================ */
+.inspector {
+  position: fixed;
+  top: var(--header-height);
+  right: 0;
+  bottom: 0;
+  width: var(--inspector-width);
+  background: var(--bg-secondary);
+  border-left: 1px solid var(--border-color);
+  transform: translateX(100%);
+  transition: transform 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  z-index: 50;
+}
+
+.inspector.open {
+  transform: translateX(0);
+}
+
+.inspector-header {
+  padding: var(--spacing-md);
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.inspector-title {
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.inspector-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.inspector-tab {
+  flex: 1;
+  padding: var(--spacing-sm);
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: all 0.2s;
+}
+
+.inspector-tab.active {
+  color: var(--accent-highlight);
+  border-bottom: 2px solid var(--accent-highlight);
+}
+
+.inspector-tab:hover:not(.active) {
+  background: var(--bg-card);
+}
+
+.inspector-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--spacing-md);
+}
+
+.inspector-section {
+  margin-bottom: var(--spacing-lg);
+}
+
+.inspector-section h4 {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: var(--spacing-sm);
+  padding-bottom: var(--spacing-xs);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.key-chain {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+}
+
+.key-row {
+  display: flex;
+  justify-content: space-between;
+  padding: var(--spacing-xs) 0;
+}
+
+.key-label {
+  color: var(--text-secondary);
+}
+
+.key-value {
+  color: var(--accent-info);
+  cursor: pointer;
+}
+
+.key-value:hover {
+  text-decoration: underline;
+}
+
+.threshold-display {
+  background: var(--bg-card);
+  padding: var(--spacing-md);
+  border-radius: 6px;
+  text-align: center;
+  margin-top: var(--spacing-sm);
+}
+
+.threshold-value {
+  font-size: 1.5rem;
+  font-family: var(--font-mono);
+  color: var(--accent-signal);
+}
+
+.threshold-explanation {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-top: var(--spacing-xs);
+}
+
+.hash-analysis {
+  background: var(--bg-card);
+  border-radius: 6px;
+  padding: var(--spacing-md);
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+}
+
+.hash-row {
+  display: flex;
+  justify-content: space-between;
+  padding: var(--spacing-xs) 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.hash-row:last-child {
+  border-bottom: none;
+}
+
+.hash-result {
+  font-weight: 600;
+  padding: var(--spacing-sm);
+  border-radius: 4px;
+  text-align: center;
+  margin-top: var(--spacing-sm);
+}
+
+.hash-result.signal {
+  background: rgba(0, 212, 170, 0.2);
+  color: var(--accent-signal);
+}
+
+.hash-result.cover {
+  background: rgba(108, 117, 125, 0.2);
+  color: var(--accent-cover);
+}
+
+.event-log {
+  max-height: 300px;
+  overflow-y: auto;
+  background: var(--bg-card);
+  border-radius: 6px;
+  padding: var(--spacing-sm);
+}
+
+.event-item {
+  display: flex;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-xs) 0;
+  font-size: 0.8rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.event-item:last-child {
+  border-bottom: none;
+}
+
+.event-time {
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  min-width: 70px;
+}
+
+.event-type {
+  font-weight: 600;
+  min-width: 60px;
+}
+
+.event-type.signal {
+  color: var(--accent-signal);
+}
+
+.event-type.epoch {
+  color: var(--accent-info);
+}
+
+.event-type.decode {
+  color: var(--accent-warning);
+}
+
+.event-message {
+  color: var(--text-secondary);
+}
+
+/* ============================================
+   SCENARIO MODAL
+   ============================================ */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s;
+}
+
+.modal-overlay.open {
+  opacity: 1;
+  visibility: visible;
+}
+
+.modal {
+  background: var(--bg-secondary);
+  border-radius: 12px;
+  width: 90%;
+  max-width: 500px;
+  max-height: 80vh;
+  overflow: hidden;
+  transform: scale(0.9);
+  transition: transform 0.3s;
+}
+
+.modal-overlay.open .modal {
+  transform: scale(1);
+}
+
+.modal-header {
+  padding: var(--spacing-lg);
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-header h2 {
+  font-size: 1.25rem;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.modal-content {
+  padding: var(--spacing-lg);
+  overflow-y: auto;
+  max-height: calc(80vh - 120px);
+}
+
+.scenario-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.scenario-item {
+  padding: var(--spacing-md);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.scenario-item:hover {
+  border-color: var(--accent-highlight);
+  background: var(--bg-tertiary);
+}
+
+.scenario-item h3 {
+  font-size: 1rem;
+  margin-bottom: var(--spacing-xs);
+}
+
+.scenario-item p {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.scenario-item .duration {
+  font-size: 0.8rem;
+  color: var(--accent-info);
+  margin-top: var(--spacing-xs);
+}
+
+/* ============================================
+   STEP MODE OVERLAY
+   ============================================ */
+.step-overlay {
+  position: fixed;
+  bottom: var(--spacing-lg);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: var(--spacing-md) var(--spacing-lg);
+  display: none;
+  align-items: center;
+  gap: var(--spacing-lg);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  z-index: 150;
+}
+
+.step-overlay.active {
+  display: flex;
+}
+
+.step-explanation {
+  max-width: 400px;
+}
+
+.step-explanation h4 {
+  font-size: 0.9rem;
+  color: var(--accent-highlight);
+  margin-bottom: var(--spacing-xs);
+}
+
+.step-explanation p {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+@media (max-width: 768px) {
+  .split-view {
+    flex-direction: column;
+  }
+
+  .panel {
+    border-right: none;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .inspector {
+    width: 100%;
+    height: 50vh;
+    top: auto;
+    bottom: 0;
+    transform: translateY(100%);
+  }
+
+  .inspector.open {
+    transform: translateY(0);
+  }
+
+  .header-center {
+    display: none;
+  }
+}
+
+/* ============================================
+   UTILITIES
+   ============================================ */
+.hidden {
+  display: none !important;
+}
+
+.mono {
+  font-family: var(--font-mono);
+}
+
+.text-signal {
+  color: var(--accent-signal);
+}
+
+.text-cover {
+  color: var(--accent-cover);
+}
+
+.text-muted {
+  color: var(--text-muted);
+}
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <div class="header-left">
+      <div class="logo">🔐 StegoChannel Demo</div>
+      <div class="beacon-status">
+        <select id="beaconModeSelect" onchange="changeBeaconMode(this.value)" style="background: var(--bg-card); color: var(--accent-info); border: 1px solid var(--border-color); border-radius: 4px; padding: 2px 6px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; cursor: pointer;">
+          <option value="manual">Manual</option>
+          <option value="accelerated">Accelerated</option>
+          <option value="fixed">Fixed Seed</option>
+        </select>
+        <span class="epoch-display">Epoch: <span id="epochNumber">1</span></span>
+        <span class="epoch-display">| <span id="beaconValue">a3f2...</span></span>
+        <button class="btn" id="nextEpochBtn" onclick="Beacon.nextEpoch()" style="padding: 2px 8px; font-size: 0.75rem;">Next Epoch</button>
+      </div>
+    </div>
+
+    <div class="header-center">
+      <div class="mode-toggle">
+        <button class="mode-btn active" id="stepModeBtn" onclick="setMode('step')">Step</button>
+        <button class="mode-btn" id="autoModeBtn" onclick="setMode('auto')">Auto</button>
+      </div>
+      <div class="speed-control" id="speedControl" style="display: none;">
+        <span>Speed:</span>
+        <input type="range" class="speed-slider" id="speedSlider" min="0.5" max="4" step="0.5" value="1">
+        <span id="speedValue">1x</span>
+      </div>
+    </div>
+
+    <div class="header-right">
+      <div class="key-display" title="Channel Key">Key: <span id="keyDisplay">demo123</span></div>
+      <button class="btn" onclick="openAboutModal()">❓ How It Works</button>
+      <button class="btn" onclick="openScenarioModal()">📋 Scenarios</button>
+      <button class="btn" onclick="resetDemo()">🔄 Reset</button>
+      <button class="btn btn-icon" id="inspectorToggle" onclick="toggleInspector()" title="Toggle Inspector (I)">🔍</button>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="main-container">
+    <div class="split-view" id="splitView">
+      <!-- Sender Panel -->
+      <div class="panel" id="senderPanel">
+        <div class="panel-header">
+          <div class="panel-title">
+            <span class="icon">📤</span>
+            Sender View
+          </div>
+        </div>
+        <div class="panel-content">
+          <!-- Message Input -->
+          <div class="message-input-section">
+            <h3>Message to Transmit</h3>
+            <input type="text" class="message-input" id="messageInput" placeholder="Enter your secret message..." value="HELLO">
+            <div class="binary-display" id="binaryDisplay">
+              Binary: 01001000 01000101 01001100 01001100 01001111 (40 bits + frame overhead)
+            </div>
+          </div>
+
+          <!-- Transmission Progress -->
+          <div class="progress-section">
+            <h3>Transmission Progress</h3>
+            <div class="progress-bar-container">
+              <div class="progress-bar" id="progressBar" style="width: 0%"></div>
+            </div>
+            <div class="progress-stats">
+              <span><span id="bitsSent">0</span> / <span id="totalBits">56</span> bits</span>
+              <span id="progressPercent">0%</span>
+            </div>
+            <div class="post-counter">
+              <div class="counter-item">
+                <span class="signal">●</span> Signal: <span id="signalCount">0</span>
+              </div>
+              <div class="counter-item">
+                <span class="cover">●</span> Cover: <span id="coverCount">0</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Draft Composition -->
+          <div class="draft-section">
+            <h3>Compose Draft Post</h3>
+            <textarea class="draft-textarea" id="draftTextarea" placeholder="Write your post..." oninput="updateFeatureDisplay()"></textarea>
+            <label class="media-toggle">
+              <input type="checkbox" id="hasMedia" onchange="updateFeatureDisplay()">
+              Has media attachment
+            </label>
+
+            <!-- Feature Display -->
+            <div class="feature-display" id="featureDisplay">
+              <div class="feature-row">
+                <span class="feature-label">Length</span>
+                <span class="feature-value">
+                  <span id="lengthValue">0</span> chars | ≥50? <span id="lengthCheck">NO</span>
+                  <span class="feature-bit bit-0" id="lengthBit">0</span>
+                </span>
+              </div>
+              <div class="feature-row">
+                <span class="feature-label">Media</span>
+                <span class="feature-value">
+                  <span id="mediaValue">NO</span>
+                  <span class="feature-bit bit-0" id="mediaBit">0</span>
+                </span>
+              </div>
+              <div class="feature-row">
+                <span class="feature-label">Question?</span>
+                <span class="feature-value">
+                  <span id="questionValue">NO</span>
+                  <span class="feature-bit bit-0" id="questionBit">0</span>
+                </span>
+              </div>
+              <div class="feature-row">
+                <span class="feature-label">Extracted</span>
+                <span class="feature-value mono" id="extractedBits">000</span>
+              </div>
+              <div class="feature-row">
+                <span class="feature-label">Needed</span>
+                <span class="feature-value mono" id="neededBits">010</span>
+              </div>
+            </div>
+
+            <div class="match-display no-match" id="matchDisplay">
+              ✗ NO MATCH - This will be a cover post
+            </div>
+
+            <div class="suggestions" id="suggestions">
+              <div class="suggestion-title">💡 Suggestions</div>
+              <div class="suggestion-item" id="suggestionText">Add ~50 characters to set the length bit</div>
+            </div>
+
+            <div class="draft-actions">
+              <button class="btn btn-success" id="publishBtn" onclick="publishPost()">Publish</button>
+              <button class="btn" onclick="publishAsCover()">Publish as Cover</button>
+              <button class="btn" onclick="discardDraft()">Discard</button>
+            </div>
+          </div>
+
+          <!-- Sender's Feed View -->
+          <h3 style="margin-bottom: var(--spacing-sm);">Published Posts</h3>
+          <div class="feed" id="senderFeed">
+            <div class="waiting-status">No posts yet. Compose and publish your first post!</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Receiver Panel -->
+      <div class="panel" id="receiverPanel">
+        <div class="panel-header">
+          <div class="panel-title">
+            <span class="icon">📥</span>
+            Receiver View
+          </div>
+        </div>
+        <div class="panel-content">
+          <!-- Decode Status -->
+          <div class="decode-status">
+            <h3>Message Decoding</h3>
+            <div class="frame-display">
+              <div class="frame-section">
+                <span class="frame-label">Header:</span>
+                <span class="frame-value pending" id="frameHeader">Waiting for 0xA5...</span>
+              </div>
+              <div class="frame-section">
+                <span class="frame-label">Length:</span>
+                <span class="frame-value pending" id="frameLength">--</span>
+              </div>
+              <div class="frame-section">
+                <span class="frame-label">Data:</span>
+                <span class="frame-value pending" id="frameData">--</span>
+              </div>
+              <div class="frame-section">
+                <span class="frame-label">MAC:</span>
+                <span class="frame-value pending" id="frameMac">--</span>
+              </div>
+            </div>
+
+            <div class="bit-buffer" id="bitBuffer">
+              Accumulated bits: <span id="accumulatedBits">--</span>
+            </div>
+
+            <div class="decoded-message partial" id="decodedMessage">
+              Waiting for signal posts...
+            </div>
+          </div>
+
+          <!-- Receiver's Feed View -->
+          <h3 style="margin-bottom: var(--spacing-sm);">Incoming Feed</h3>
+          <div class="feed" id="receiverFeed">
+            <div class="waiting-status">Monitoring for posts...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Inspector Panel -->
+    <aside class="inspector open" id="inspector">
+      <div class="inspector-header">
+        <div class="inspector-title">🔬 Protocol Inspector</div>
+        <button class="modal-close" onclick="toggleInspector()">×</button>
+      </div>
+
+      <div class="inspector-tabs">
+        <button class="inspector-tab active" onclick="switchInspectorTab('keys')">Keys</button>
+        <button class="inspector-tab" onclick="switchInspectorTab('hash')">Hash</button>
+        <button class="inspector-tab" onclick="switchInspectorTab('log')">Log</button>
+        <button class="inspector-tab" onclick="switchInspectorTab('compare')">Compare</button>
+      </div>
+
+      <div class="inspector-content">
+        <!-- Keys Tab -->
+        <div class="inspector-tab-content" id="tab-keys">
+          <div class="inspector-section">
+            <h4>Key Derivation Chain</h4>
+            <div class="key-chain">
+              <div class="key-row">
+                <span class="key-label">Channel Key:</span>
+                <span class="key-value" id="inspectorChannelKey" title="Click to copy">a3f2b7c1...</span>
+              </div>
+              <div class="key-row">
+                <span class="key-label">Beacon Value:</span>
+                <span class="key-value" id="inspectorBeacon">e5d4c3b2...</span>
+              </div>
+              <div class="key-row">
+                <span class="key-label">Epoch Key:</span>
+                <span class="key-value" id="inspectorEpochKey">7a8b9c0d...</span>
+              </div>
+            </div>
+            <div class="threshold-display">
+              <div class="threshold-value" id="inspectorThreshold">0.2473</div>
+              <div class="threshold-explanation">
+                Posts with hash &lt; <span id="thresholdPercent">24.73%</span> are signals
+              </div>
+            </div>
+          </div>
+
+          <div class="inspector-section">
+            <h4>Derivation Formula</h4>
+            <div style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-secondary); background: var(--bg-card); padding: var(--spacing-sm); border-radius: 4px;">
+              epoch_key = HKDF-SHA256(<br>
+              &nbsp;&nbsp;ikm: channel_key,<br>
+              &nbsp;&nbsp;salt: beacon_value,<br>
+              &nbsp;&nbsp;info: "stego-epoch"<br>
+              )
+            </div>
+          </div>
+        </div>
+
+        <!-- Hash Tab -->
+        <div class="inspector-tab-content hidden" id="tab-hash">
+          <div class="inspector-section">
+            <h4>Selected Post Analysis</h4>
+            <div class="hash-analysis" id="hashAnalysis">
+              <p style="color: var(--text-muted); text-align: center; padding: var(--spacing-md);">
+                Click a post to analyze its hash
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Log Tab -->
+        <div class="inspector-tab-content hidden" id="tab-log">
+          <div class="inspector-section">
+            <h4>Protocol Events</h4>
+            <div style="margin-bottom: var(--spacing-sm);">
+              <select id="logFilter" onchange="filterEventLog()" style="background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; padding: 4px 8px; font-size: 0.85rem;">
+                <option value="all">All Events</option>
+                <option value="signal">Signals Only</option>
+                <option value="epoch">Epochs Only</option>
+                <option value="decode">Decodes Only</option>
+              </select>
+              <button class="btn" style="margin-left: 8px; padding: 4px 8px;" onclick="exportLog()">Export</button>
+            </div>
+            <div class="event-log" id="eventLog">
+              <div class="event-item">
+                <span class="event-time">00:00:00</span>
+                <span class="event-type epoch">INIT</span>
+                <span class="event-message">Demo initialized with default key</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Compare Tab -->
+        <div class="inspector-tab-content hidden" id="tab-compare">
+          <div class="inspector-section">
+            <h4>Observer vs Keyholder View</h4>
+            <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: var(--spacing-md);">
+              This demonstrates the steganographic principle: without the key,
+              signal posts are indistinguishable from cover posts.
+            </p>
+            <div style="display: flex; gap: var(--spacing-sm); margin-bottom: var(--spacing-md);">
+              <button class="btn" onclick="showObserverView()">👁️ Observer</button>
+              <button class="btn btn-primary" onclick="showKeyholderView()">🔑 Keyholder</button>
+            </div>
+            <div id="compareView" style="background: var(--bg-card); border-radius: 6px; padding: var(--spacing-md); font-size: 0.85rem;">
+              <p style="color: var(--text-muted);">Keyholder view: Signal/cover posts are distinguished and bits are extracted.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <!-- About Modal -->
+  <div class="modal-overlay" id="aboutModal">
+    <div class="modal" style="max-width: 700px;">
+      <div class="modal-header">
+        <h2>🔐 How StegoChannel Works</h2>
+        <button class="modal-close" onclick="closeAboutModal()">×</button>
+      </div>
+      <div class="modal-content" style="line-height: 1.7;">
+        <div style="background: var(--bg-tertiary); border-radius: 8px; padding: var(--spacing-md); margin-bottom: var(--spacing-lg);">
+          <p style="font-size: 1.1rem; margin: 0; color: var(--text-primary);">
+            <strong>The secret is not in what you say—it's in which posts you choose to publish.</strong>
+          </p>
+        </div>
+
+        <h3 style="color: var(--accent-signal); margin-bottom: var(--spacing-sm);">📤 Sender Side</h3>
+        <ol style="color: var(--text-secondary); margin-bottom: var(--spacing-lg); padding-left: var(--spacing-lg);">
+          <li style="margin-bottom: var(--spacing-sm);">Enter a secret message (e.g., "HELLO")</li>
+          <li style="margin-bottom: var(--spacing-sm);">The message is converted to bits: <code style="background: var(--bg-card); padding: 2px 6px; border-radius: 3px;">01001000 01000101...</code></li>
+          <li style="margin-bottom: var(--spacing-sm);">Write posts naturally—each post's <strong>features</strong> encode 3 bits:
+            <ul style="margin-top: var(--spacing-xs); list-style: disc; padding-left: var(--spacing-md);">
+              <li><strong>Length ≥ 50 chars</strong> → bit 1, otherwise → bit 0</li>
+              <li><strong>Has media</strong> → bit 1, otherwise → bit 0</li>
+              <li><strong>Contains ?</strong> → bit 1, otherwise → bit 0</li>
+            </ul>
+          </li>
+          <li style="margin-bottom: var(--spacing-sm);">When a post's bits match the next needed bits → publish as <span style="color: var(--accent-signal); font-weight: 600;">SIGNAL</span></li>
+          <li style="margin-bottom: var(--spacing-sm);">Otherwise → publish as <span style="color: var(--accent-cover);">COVER</span> (camouflage traffic)</li>
+        </ol>
+
+        <h3 style="color: var(--accent-info); margin-bottom: var(--spacing-sm);">📥 Receiver Side</h3>
+        <ol style="color: var(--text-secondary); margin-bottom: var(--spacing-lg); padding-left: var(--spacing-lg);">
+          <li style="margin-bottom: var(--spacing-sm);">Monitor the sender's public feed</li>
+          <li style="margin-bottom: var(--spacing-sm);">For each post, compute: <code style="background: var(--bg-card); padding: 2px 6px; border-radius: 3px;">hash(author + content + epoch)</code></li>
+          <li style="margin-bottom: var(--spacing-sm);">If <strong>hash &lt; threshold</strong> → it's a SIGNAL post, extract the 3 feature bits</li>
+          <li style="margin-bottom: var(--spacing-sm);">Accumulate bits until the full message is reconstructed</li>
+          <li style="margin-bottom: var(--spacing-sm);">Verify the MAC to confirm authenticity</li>
+        </ol>
+
+        <h3 style="color: var(--accent-highlight); margin-bottom: var(--spacing-sm);">🔑 The Key Insight</h3>
+        <div style="background: var(--bg-card); border-radius: 8px; padding: var(--spacing-md); margin-bottom: var(--spacing-lg);">
+          <p style="color: var(--text-secondary); margin: 0;">
+            <strong style="color: var(--text-primary);">Without the shared secret key</strong>, an observer cannot determine which posts are signals and which are cover.
+            All posts look like normal social media activity. The threshold is derived from the key, so only someone with the key can identify signal posts.
+          </p>
+        </div>
+
+        <h3 style="color: var(--accent-warning); margin-bottom: var(--spacing-sm);">⏱️ Why So Slow?</h3>
+        <p style="color: var(--text-secondary); margin-bottom: var(--spacing-lg);">
+          At ~3 bits per signal post and ~25% signal rate, transmitting "HELLO" (40 bits) requires roughly 14 signal posts spread over days of normal posting.
+          <strong style="color: var(--text-primary);">This slowness is the feature, not a bug</strong>—it makes the channel indistinguishable from normal activity.
+        </p>
+
+        <div style="text-align: center; padding-top: var(--spacing-md); border-top: 1px solid var(--border-color);">
+          <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: var(--spacing-sm);">
+            Full protocol specification: <a href="../files/SPEC.md" style="color: var(--accent-info);">SPEC.md</a>
+          </p>
+          <button class="btn btn-primary" onclick="closeAboutModal()">Got it!</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scenario Modal -->
+  <div class="modal-overlay" id="scenarioModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>Load Scenario</h2>
+        <button class="modal-close" onclick="closeScenarioModal()">×</button>
+      </div>
+      <div class="modal-content">
+        <div class="scenario-list">
+          <div class="scenario-item" onclick="loadScenario('quick')">
+            <h3>⚡ Quick Demo</h3>
+            <p>Short "HI" message to see the protocol in action fast.</p>
+            <div class="duration">~90 seconds in auto mode</div>
+          </div>
+          <div class="scenario-item" onclick="loadScenario('educational')">
+            <h3>📚 Educational Walkthrough</h3>
+            <p>Step-by-step tutorial with explanations at each decision point.</p>
+            <div class="duration">~5 minutes in step mode</div>
+          </div>
+          <div class="scenario-item" onclick="loadScenario('epoch')">
+            <h3>🔄 Epoch Boundary</h3>
+            <p>Demonstrates key rederivation when epoch changes mid-transmission.</p>
+            <div class="duration">~3 minutes</div>
+          </div>
+          <div class="scenario-item" onclick="loadScenario('long')">
+            <h3>📝 Long Message</h3>
+            <p>Multi-frame transmission showing full message assembly.</p>
+            <div class="duration">~10 minutes</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step Mode Overlay -->
+  <div class="step-overlay" id="stepOverlay">
+    <div class="step-explanation">
+      <h4 id="stepTitle">Post Published</h4>
+      <p id="stepDescription">The sender published a new post. The receiver will now check if it's a signal or cover post.</p>
+    </div>
+    <button class="btn btn-primary" id="nextStepBtn" onclick="nextStep()">Next Step →</button>
+  </div>
+
+<script>
+// ============================================
+// STATE MANAGEMENT
+// ============================================
+const AppState = {
+  // Channel configuration
+  channelKey: null,
+  epochKey: null,
+  threshold: 0.25,
+
+  // Beacon state
+  beacon: {
+    mode: 'manual', // 'manual' | 'accelerated' | 'fixed'
+    seed: 'demo123',
+    epoch: 1,
+    value: null,
+    timer: null,
+    speed: 1
+  },
+
+  // Posts
+  posts: [],
+
+  // Sender state
+  sender: {
+    message: 'HELLO',
+    messageBits: [],
+    bitsSent: 0,
+    signalCount: 0,
+    coverCount: 0,
+    frameOverhead: 16, // header + length + MAC bits simplified
+    complete: false
+  },
+
+  // Receiver state
+  receiver: {
+    bitBuffer: [],
+    frameState: 'waiting_header',
+    decodedMessage: '',
+    macVerified: false
+  },
+
+  // UI state
+  ui: {
+    mode: 'step', // 'step' | 'auto'
+    inspectorOpen: true,
+    selectedPostId: null,
+    stepPending: false
+  },
+
+  // Event log
+  eventLog: []
+};
+
+// State change subscribers
+const subscribers = [];
+function subscribe(fn) {
+  subscribers.push(fn);
+  return () => subscribers.splice(subscribers.indexOf(fn), 1);
+}
+function notifyChange() {
+  subscribers.forEach(fn => fn(AppState));
+}
+
+// ============================================
+// CRYPTO UTILITIES (Web Crypto API)
+// ============================================
+const Crypto = {
+  encoder: new TextEncoder(),
+  decoder: new TextDecoder(),
+
+  async sha256(data) {
+    const buffer = typeof data === 'string' ? this.encoder.encode(data) : data;
+    const hash = await crypto.subtle.digest('SHA-256', buffer);
+    return new Uint8Array(hash);
+  },
+
+  async hkdf(ikm, salt, info, length = 32) {
+    const ikmBuffer = typeof ikm === 'string' ? this.encoder.encode(ikm) : ikm;
+    const saltBuffer = typeof salt === 'string' ? this.encoder.encode(salt) : salt;
+    const infoBuffer = typeof info === 'string' ? this.encoder.encode(info) : info;
+
+    const keyMaterial = await crypto.subtle.importKey(
+      'raw', ikmBuffer, { name: 'HKDF' }, false, ['deriveBits']
+    );
+
+    const derivedBits = await crypto.subtle.deriveBits(
+      { name: 'HKDF', hash: 'SHA-256', salt: saltBuffer, info: infoBuffer },
+      keyMaterial,
+      length * 8
+    );
+
+    return new Uint8Array(derivedBits);
+  },
+
+  async hmac(key, data) {
+    const keyBuffer = typeof key === 'string' ? this.encoder.encode(key) : key;
+    const dataBuffer = typeof data === 'string' ? this.encoder.encode(data) : data;
+
+    const cryptoKey = await crypto.subtle.importKey(
+      'raw', keyBuffer, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
+    );
+
+    const signature = await crypto.subtle.sign('HMAC', cryptoKey, dataBuffer);
+    return new Uint8Array(signature);
+  },
+
+  // Convert hash to fraction [0, 1)
+  hashToFraction(hash) {
+    const view = new DataView(hash.buffer);
+    const value = view.getUint32(0, false); // First 4 bytes, big-endian
+    return value / 0xFFFFFFFF;
+  },
+
+  // Hex encoding
+  toHex(bytes) {
+    return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+  },
+
+  fromHex(hex) {
+    const bytes = new Uint8Array(hex.length / 2);
+    for (let i = 0; i < hex.length; i += 2) {
+      bytes[i / 2] = parseInt(hex.substr(i, 2), 16);
+    }
+    return bytes;
+  },
+
+  // Deterministic PRNG from seed
+  seededRandom(seed) {
+    let state = 0;
+    for (let i = 0; i < seed.length; i++) {
+      state = ((state << 5) - state + seed.charCodeAt(i)) | 0;
+    }
+    return function() {
+      state = (state * 1103515245 + 12345) | 0;
+      return (state >>> 16) / 65536;
+    };
+  }
+};
+
+// ============================================
+// PROTOCOL IMPLEMENTATION
+// ============================================
+const Protocol = {
+  // Extract features from post content
+  extractFeatures(content, hasMedia) {
+    const lengthBit = content.length >= 50 ? 1 : 0;
+    const mediaBit = hasMedia ? 1 : 0;
+    const questionBit = content.includes('?') ? 1 : 0;
+
+    return {
+      length: content.length,
+      lengthBit,
+      hasMedia,
+      mediaBit,
+      hasQuestion: content.includes('?'),
+      questionBit,
+      bits: (lengthBit << 2) | (mediaBit << 1) | questionBit,
+      bitsString: `${lengthBit}${mediaBit}${questionBit}`
+    };
+  },
+
+  // Check if post is a signal (hash < threshold)
+  async isSignal(post, epochKey, threshold) {
+    const hashInput = `${post.author}|${post.content}|${AppState.beacon.epoch}`;
+    const hash = await Crypto.sha256(hashInput);
+    const fraction = Crypto.hashToFraction(hash);
+    return {
+      isSignal: fraction < threshold,
+      hash: Crypto.toHex(hash),
+      fraction,
+      threshold
+    };
+  },
+
+  // Convert message to bits
+  messageToBits(message) {
+    const bits = [];
+    for (const char of message) {
+      const code = char.charCodeAt(0);
+      for (let i = 7; i >= 0; i--) {
+        bits.push((code >> i) & 1);
+      }
+    }
+    return bits;
+  },
+
+  // Convert bits to message
+  bitsToMessage(bits) {
+    let message = '';
+    for (let i = 0; i + 7 < bits.length; i += 8) {
+      let byte = 0;
+      for (let j = 0; j < 8; j++) {
+        byte = (byte << 1) | bits[i + j];
+      }
+      if (byte >= 32 && byte < 127) {
+        message += String.fromCharCode(byte);
+      }
+    }
+    return message;
+  },
+
+  // Get next required bits from message
+  getNextRequiredBits(messageBits, bitsSent) {
+    const bits = [];
+    for (let i = 0; i < 3 && bitsSent + i < messageBits.length; i++) {
+      bits.push(messageBits[bitsSent + i]);
+    }
+    while (bits.length < 3) bits.push(0);
+    return bits.join('');
+  },
+
+  // Build simple message frame
+  buildFrame(message) {
+    // Simplified frame: header (0xA5) + length + data + MAC
+    const header = [1, 0, 1, 0, 0, 1, 0, 1]; // 0xA5
+    const length = message.length;
+    const lengthBits = [];
+    for (let i = 7; i >= 0; i--) {
+      lengthBits.push((length >> i) & 1);
+    }
+    const dataBits = this.messageToBits(message);
+    // Simplified MAC: just repeat first 8 bits
+    const mac = dataBits.slice(0, 8);
+
+    return [...header, ...lengthBits, ...dataBits, ...mac];
+  }
+};
+
+// ============================================
+// BEACON MANAGEMENT
+// ============================================
+const Beacon = {
+  async init() {
+    AppState.channelKey = await Crypto.sha256(AppState.beacon.seed);
+    await this.updateEpoch();
+    logEvent('epoch', `Initialized with seed "${AppState.beacon.seed}"`);
+  },
+
+  async updateEpoch() {
+    // Generate beacon value from seed + epoch
+    const beaconInput = `${AppState.beacon.seed}-epoch-${AppState.beacon.epoch}`;
+    AppState.beacon.value = await Crypto.sha256(beaconInput);
+
+    // Derive epoch key
+    AppState.epochKey = await Crypto.hkdf(
+      AppState.channelKey,
+      AppState.beacon.value,
+      'stego-epoch'
+    );
+
+    // Calculate threshold from epoch key
+    AppState.threshold = Crypto.hashToFraction(AppState.epochKey);
+
+    // Update UI
+    updateBeaconDisplay();
+    updateInspectorKeys();
+  },
+
+  async nextEpoch() {
+    AppState.beacon.epoch++;
+    await this.updateEpoch();
+    logEvent('epoch', `Epoch advanced to ${AppState.beacon.epoch}`);
+  },
+
+  setMode(mode) {
+    AppState.beacon.mode = mode;
+    if (AppState.beacon.timer) {
+      clearInterval(AppState.beacon.timer);
+      AppState.beacon.timer = null;
+    }
+
+    if (mode === 'accelerated') {
+      const interval = 60000 / AppState.beacon.speed; // 1 minute / speed
+      AppState.beacon.timer = setInterval(() => this.nextEpoch(), interval);
+    }
+
+    // Update UI
+    const select = document.getElementById('beaconModeSelect');
+    if (select) select.value = mode;
+
+    // Show/hide Next Epoch button based on mode
+    const nextBtn = document.getElementById('nextEpochBtn');
+    if (nextBtn) nextBtn.style.display = mode === 'manual' ? 'inline-block' : 'none';
+
+    logEvent('beacon', `Beacon mode changed to ${mode.toUpperCase()}`);
+  }
+};
+
+// Change beacon mode from UI
+function changeBeaconMode(mode) {
+  Beacon.setMode(mode);
+}
+
+// ============================================
+// POST MANAGEMENT
+// ============================================
+let postIdCounter = 0;
+
+async function createPost(content, hasMedia, forceSignal = null) {
+  const post = {
+    id: `post-${++postIdCounter}`,
+    author: 'Alice',
+    content,
+    hasMedia,
+    timestamp: Date.now(),
+    epoch: AppState.beacon.epoch,
+    features: Protocol.extractFeatures(content, hasMedia)
+  };
+
+  // Determine if signal or cover
+  const signalCheck = await Protocol.isSignal(post, AppState.epochKey, AppState.threshold);
+  post.hash = signalCheck.hash;
+  post.hashFraction = signalCheck.fraction;
+
+  // For demo purposes, we can force signal/cover based on feature matching
+  if (forceSignal !== null) {
+    post.isSignal = forceSignal;
+  } else {
+    post.isSignal = signalCheck.isSignal;
+  }
+
+  AppState.posts.unshift(post);
+
+  if (post.isSignal) {
+    AppState.sender.signalCount++;
+    // Add bits to sender's sent count
+    const bitsToAdd = Math.min(3, AppState.sender.messageBits.length - AppState.sender.bitsSent);
+    AppState.sender.bitsSent += bitsToAdd;
+
+    // Add bits to receiver's buffer
+    const extractedBits = post.features.bitsString.split('').map(Number).slice(0, bitsToAdd);
+    AppState.receiver.bitBuffer.push(...extractedBits);
+
+    logEvent('signal', `Signal post detected: bits=${post.features.bitsString.slice(0, bitsToAdd)}`);
+  } else {
+    AppState.sender.coverCount++;
+    logEvent('cover', `Cover post published`);
+  }
+
+  // Check for message completion
+  if (AppState.sender.bitsSent >= AppState.sender.messageBits.length) {
+    AppState.sender.complete = true;
+    AppState.receiver.decodedMessage = Protocol.bitsToMessage(AppState.receiver.bitBuffer);
+    AppState.receiver.frameState = 'complete';
+    logEvent('decode', `Message decoded: "${AppState.receiver.decodedMessage}"`);
+  }
+
+  updateUI();
+  return post;
+}
+
+// ============================================
+// UI UPDATE FUNCTIONS
+// ============================================
+function updateUI() {
+  updateProgressDisplay();
+  updateReceiverDisplay();
+  renderFeeds();
+  notifyChange();
+}
+
+function updateBeaconDisplay() {
+  document.getElementById('epochNumber').textContent = AppState.beacon.epoch;
+  document.getElementById('beaconValue').textContent =
+    AppState.beacon.value ? Crypto.toHex(AppState.beacon.value).slice(0, 8) + '...' : '...';
+}
+
+function updateProgressDisplay() {
+  const { bitsSent, messageBits, signalCount, coverCount, complete } = AppState.sender;
+  const totalBits = messageBits.length;
+  const percent = totalBits > 0 ? Math.round((bitsSent / totalBits) * 100) : 0;
+
+  document.getElementById('progressBar').style.width = `${percent}%`;
+  document.getElementById('bitsSent').textContent = bitsSent;
+  document.getElementById('totalBits').textContent = totalBits;
+  document.getElementById('progressPercent').textContent = `${percent}%`;
+  document.getElementById('signalCount').textContent = signalCount;
+  document.getElementById('coverCount').textContent = coverCount;
+
+  if (complete) {
+    document.getElementById('progressBar').style.background = 'var(--accent-signal)';
+  }
+}
+
+function updateReceiverDisplay() {
+  const { bitBuffer, frameState, decodedMessage } = AppState.receiver;
+
+  // Update bit buffer display
+  const bufferStr = bitBuffer.length > 0
+    ? bitBuffer.join('').match(/.{1,8}/g)?.map(b => `<span class="byte">${b}</span>`).join(' ') || '--'
+    : '--';
+  document.getElementById('accumulatedBits').innerHTML = bufferStr;
+
+  // Update frame display
+  const headerComplete = bitBuffer.length >= 8;
+  const lengthComplete = bitBuffer.length >= 16;
+
+  document.getElementById('frameHeader').textContent = headerComplete ? '0xA5 ✓' : `Waiting... (${Math.min(bitBuffer.length, 8)}/8 bits)`;
+  document.getElementById('frameHeader').className = `frame-value ${headerComplete ? 'complete' : 'pending'}`;
+
+  if (headerComplete) {
+    const lengthBits = bitBuffer.slice(8, 16);
+    if (lengthComplete) {
+      const length = parseInt(lengthBits.join(''), 2);
+      document.getElementById('frameLength').textContent = `${length} bytes`;
+      document.getElementById('frameLength').className = 'frame-value complete';
+    } else {
+      document.getElementById('frameLength').textContent = `(${lengthBits.length}/8 bits)`;
+    }
+  }
+
+  // Update decoded message
+  const msgEl = document.getElementById('decodedMessage');
+  if (frameState === 'complete') {
+    msgEl.textContent = `✓ Decoded: "${decodedMessage}"`;
+    msgEl.className = 'decoded-message';
+  } else if (bitBuffer.length > 0) {
+    const partial = Protocol.bitsToMessage(bitBuffer);
+    msgEl.textContent = partial ? `Decoding: "${partial}..."` : `Receiving bits... (${bitBuffer.length})`;
+    msgEl.className = 'decoded-message partial';
+  } else {
+    msgEl.textContent = 'Waiting for signal posts...';
+    msgEl.className = 'decoded-message partial';
+  }
+}
+
+function updateFeatureDisplay() {
+  const content = document.getElementById('draftTextarea').value;
+  const hasMedia = document.getElementById('hasMedia').checked;
+  const features = Protocol.extractFeatures(content, hasMedia);
+
+  // Update individual features
+  document.getElementById('lengthValue').textContent = features.length;
+  document.getElementById('lengthCheck').textContent = features.lengthBit ? 'YES' : 'NO';
+  document.getElementById('lengthBit').textContent = features.lengthBit;
+  document.getElementById('lengthBit').className = `feature-bit bit-${features.lengthBit}`;
+
+  document.getElementById('mediaValue').textContent = features.hasMedia ? 'YES' : 'NO';
+  document.getElementById('mediaBit').textContent = features.mediaBit;
+  document.getElementById('mediaBit').className = `feature-bit bit-${features.mediaBit}`;
+
+  document.getElementById('questionValue').textContent = features.hasQuestion ? 'YES' : 'NO';
+  document.getElementById('questionBit').textContent = features.questionBit;
+  document.getElementById('questionBit').className = `feature-bit bit-${features.questionBit}`;
+
+  document.getElementById('extractedBits').textContent = features.bitsString;
+
+  // Get needed bits
+  const neededBits = Protocol.getNextRequiredBits(AppState.sender.messageBits, AppState.sender.bitsSent);
+  document.getElementById('neededBits').textContent = neededBits;
+
+  // Check match
+  const isMatch = features.bitsString === neededBits;
+  const matchEl = document.getElementById('matchDisplay');
+  if (isMatch) {
+    matchEl.textContent = '✓ MATCH - This will be a signal post!';
+    matchEl.className = 'match-display match';
+  } else {
+    matchEl.textContent = '✗ NO MATCH - This will be a cover post';
+    matchEl.className = 'match-display no-match';
+  }
+
+  // Update suggestions
+  updateSuggestions(features, neededBits);
+}
+
+function updateSuggestions(features, neededBits) {
+  const suggestions = [];
+  const needed = neededBits.split('').map(Number);
+
+  // Length suggestion
+  if (needed[0] === 1 && features.lengthBit === 0) {
+    suggestions.push(`Add ${50 - features.length}+ characters to set the length bit`);
+  } else if (needed[0] === 0 && features.lengthBit === 1) {
+    suggestions.push(`Remove ${features.length - 49}+ characters to clear the length bit`);
+  }
+
+  // Media suggestion
+  if (needed[1] === 1 && features.mediaBit === 0) {
+    suggestions.push('Check "Has media" to set the media bit');
+  } else if (needed[1] === 0 && features.mediaBit === 1) {
+    suggestions.push('Uncheck "Has media" to clear the media bit');
+  }
+
+  // Question suggestion
+  if (needed[2] === 1 && features.questionBit === 0) {
+    suggestions.push('Add a question mark (?) to set the question bit');
+  } else if (needed[2] === 0 && features.questionBit === 1) {
+    suggestions.push('Remove the question mark to clear the question bit');
+  }
+
+  const suggestionsEl = document.getElementById('suggestions');
+  const suggestionTextEl = document.getElementById('suggestionText');
+
+  if (suggestions.length === 0) {
+    suggestionsEl.style.display = 'none';
+  } else {
+    suggestionsEl.style.display = 'block';
+    suggestionTextEl.innerHTML = suggestions.map(s => `<div class="suggestion-item">• ${s}</div>`).join('');
+  }
+}
+
+function renderFeeds() {
+  const senderFeed = document.getElementById('senderFeed');
+  const receiverFeed = document.getElementById('receiverFeed');
+
+  if (AppState.posts.length === 0) {
+    senderFeed.innerHTML = '<div class="waiting-status">No posts yet. Compose and publish your first post!</div>';
+    receiverFeed.innerHTML = '<div class="waiting-status">Monitoring for posts...</div>';
+    return;
+  }
+
+  const renderPost = (post, showSignalInfo) => {
+    const isSelected = AppState.ui.selectedPostId === post.id;
+    return `
+      <div class="post-card ${post.isSignal ? 'signal' : 'cover'} ${isSelected ? 'selected' : ''}"
+           onclick="selectPost('${post.id}')">
+        <div class="post-header">
+          <div class="post-author">
+            <div class="avatar">${post.author[0]}</div>
+            <span class="author-name">${post.author}</span>
+          </div>
+          <div class="post-meta">
+            ${showSignalInfo ? (post.isSignal
+              ? '<span class="signal-badge">SIGNAL</span>'
+              : '<span class="cover-badge">COVER</span>') : ''}
+            <span>${formatTime(post.timestamp)}</span>
+          </div>
+        </div>
+        <div class="post-content">${escapeHtml(post.content)}</div>
+        <div class="post-footer">
+          ${post.isSignal && showSignalInfo
+            ? `<span class="extracted-bits">bits: ${post.features.bitsString}</span>`
+            : '<span></span>'}
+          ${post.hasMedia ? '<span class="media-indicator">📷</span>' : ''}
+        </div>
+      </div>
+    `;
+  };
+
+  senderFeed.innerHTML = AppState.posts.map(p => renderPost(p, true)).join('');
+  receiverFeed.innerHTML = AppState.posts.map(p => renderPost(p, true)).join('');
+}
+
+function updateInspectorKeys() {
+  document.getElementById('inspectorChannelKey').textContent =
+    AppState.channelKey ? Crypto.toHex(AppState.channelKey).slice(0, 8) + '...' : '...';
+  document.getElementById('inspectorBeacon').textContent =
+    AppState.beacon.value ? Crypto.toHex(AppState.beacon.value).slice(0, 8) + '...' : '...';
+  document.getElementById('inspectorEpochKey').textContent =
+    AppState.epochKey ? Crypto.toHex(AppState.epochKey).slice(0, 8) + '...' : '...';
+  document.getElementById('inspectorThreshold').textContent = AppState.threshold.toFixed(4);
+  document.getElementById('thresholdPercent').textContent = (AppState.threshold * 100).toFixed(2) + '%';
+}
+
+// ============================================
+// USER ACTIONS
+// ============================================
+async function publishPost() {
+  const content = document.getElementById('draftTextarea').value.trim();
+  if (!content) return;
+
+  const hasMedia = document.getElementById('hasMedia').checked;
+  const features = Protocol.extractFeatures(content, hasMedia);
+  const neededBits = Protocol.getNextRequiredBits(AppState.sender.messageBits, AppState.sender.bitsSent);
+  const isMatch = features.bitsString === neededBits;
+
+  await createPost(content, hasMedia, isMatch);
+
+  // Clear draft
+  document.getElementById('draftTextarea').value = '';
+  document.getElementById('hasMedia').checked = false;
+  updateFeatureDisplay();
+
+  // Step mode handling
+  if (AppState.ui.mode === 'step') {
+    showStepExplanation(
+      'Post Published',
+      isMatch
+        ? `Signal post! Extracted bits "${features.bitsString}" match the next required bits.`
+        : `Cover post. Bits "${features.bitsString}" don't match needed "${neededBits}".`
+    );
+  }
+}
+
+async function publishAsCover() {
+  const content = document.getElementById('draftTextarea').value.trim();
+  if (!content) return;
+
+  const hasMedia = document.getElementById('hasMedia').checked;
+  await createPost(content, hasMedia, false);
+
+  document.getElementById('draftTextarea').value = '';
+  document.getElementById('hasMedia').checked = false;
+  updateFeatureDisplay();
+}
+
+function discardDraft() {
+  document.getElementById('draftTextarea').value = '';
+  document.getElementById('hasMedia').checked = false;
+  updateFeatureDisplay();
+}
+
+function selectPost(postId) {
+  AppState.ui.selectedPostId = postId;
+  renderFeeds();
+
+  const post = AppState.posts.find(p => p.id === postId);
+  if (post) {
+    updateHashAnalysis(post);
+  }
+}
+
+function updateHashAnalysis(post) {
+  const html = `
+    <div class="hash-row">
+      <span>Input:</span>
+      <span style="color: var(--text-muted); word-break: break-all;">${post.author}|${post.content.slice(0, 20)}...|${post.epoch}</span>
+    </div>
+    <div class="hash-row">
+      <span>SHA-256:</span>
+      <span style="color: var(--accent-info);">${post.hash.slice(0, 16)}...</span>
+    </div>
+    <div class="hash-row">
+      <span>Normalized:</span>
+      <span>${post.hashFraction.toFixed(6)}</span>
+    </div>
+    <div class="hash-row">
+      <span>Threshold:</span>
+      <span>${AppState.threshold.toFixed(6)}</span>
+    </div>
+    <div class="hash-result ${post.isSignal ? 'signal' : 'cover'}">
+      ${post.hashFraction.toFixed(4)} ${post.isSignal ? '<' : '≥'} ${AppState.threshold.toFixed(4)} → ${post.isSignal ? 'SIGNAL' : 'COVER'}
+    </div>
+    <div style="margin-top: var(--spacing-md);">
+      <h5 style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: var(--spacing-xs);">Features:</h5>
+      <div class="hash-row">
+        <span>Length (${post.features.length}):</span>
+        <span>${post.features.lengthBit}</span>
+      </div>
+      <div class="hash-row">
+        <span>Media:</span>
+        <span>${post.features.mediaBit}</span>
+      </div>
+      <div class="hash-row">
+        <span>Question:</span>
+        <span>${post.features.questionBit}</span>
+      </div>
+      <div class="hash-row" style="font-weight: bold;">
+        <span>Bits:</span>
+        <span style="color: var(--accent-signal);">${post.features.bitsString}</span>
+      </div>
+    </div>
+  `;
+  document.getElementById('hashAnalysis').innerHTML = html;
+
+  // Switch to hash tab
+  switchInspectorTab('hash');
+}
+
+// ============================================
+// MODE CONTROLS
+// ============================================
+function setMode(mode) {
+  AppState.ui.mode = mode;
+
+  document.getElementById('stepModeBtn').classList.toggle('active', mode === 'step');
+  document.getElementById('autoModeBtn').classList.toggle('active', mode === 'auto');
+  document.getElementById('speedControl').style.display = mode === 'auto' ? 'flex' : 'none';
+
+  if (mode === 'step') {
+    hideStepOverlay();
+  }
+}
+
+function showStepExplanation(title, description) {
+  document.getElementById('stepTitle').textContent = title;
+  document.getElementById('stepDescription').textContent = description;
+  document.getElementById('stepOverlay').classList.add('active');
+  AppState.ui.stepPending = true;
+}
+
+function hideStepOverlay() {
+  document.getElementById('stepOverlay').classList.remove('active');
+  AppState.ui.stepPending = false;
+}
+
+function nextStep() {
+  hideStepOverlay();
+}
+
+// ============================================
+// INSPECTOR CONTROLS
+// ============================================
+function toggleInspector() {
+  AppState.ui.inspectorOpen = !AppState.ui.inspectorOpen;
+  document.getElementById('inspector').classList.toggle('open', AppState.ui.inspectorOpen);
+  document.getElementById('splitView').classList.toggle('inspector-open', AppState.ui.inspectorOpen);
+}
+
+function switchInspectorTab(tab) {
+  document.querySelectorAll('.inspector-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.inspector-tab-content').forEach(c => c.classList.add('hidden'));
+
+  document.querySelector(`.inspector-tab:nth-child(${['keys', 'hash', 'log', 'compare'].indexOf(tab) + 1})`).classList.add('active');
+  document.getElementById(`tab-${tab}`).classList.remove('hidden');
+}
+
+function showObserverView() {
+  document.getElementById('compareView').innerHTML = `
+    <p style="color: var(--text-muted); margin-bottom: var(--spacing-sm);">
+      <strong>Observer view:</strong> Without the channel key, all posts look identical.
+      There's no way to distinguish signal posts from cover posts.
+    </p>
+    <div style="opacity: 0.7;">
+      ${AppState.posts.slice(0, 3).map(p => `
+        <div style="padding: 8px; background: var(--bg-secondary); border-radius: 4px; margin-bottom: 4px;">
+          <strong>${p.author}</strong>: ${p.content.slice(0, 40)}...
+        </div>
+      `).join('') || '<p style="color: var(--text-muted);">No posts yet</p>'}
+    </div>
+  `;
+}
+
+function showKeyholderView() {
+  document.getElementById('compareView').innerHTML = `
+    <p style="color: var(--text-muted); margin-bottom: var(--spacing-sm);">
+      <strong>Keyholder view:</strong> With the channel key, signal posts are identified
+      and message bits are extracted.
+    </p>
+    <div>
+      ${AppState.posts.slice(0, 3).map(p => `
+        <div style="padding: 8px; background: var(--bg-secondary); border-radius: 4px; margin-bottom: 4px; border-left: 3px solid ${p.isSignal ? 'var(--accent-signal)' : 'var(--accent-cover)'};">
+          <strong>${p.author}</strong>: ${p.content.slice(0, 40)}...
+          <span style="float: right; color: ${p.isSignal ? 'var(--accent-signal)' : 'var(--accent-cover)'};">
+            ${p.isSignal ? `[${p.features.bitsString}]` : '(cover)'}
+          </span>
+        </div>
+      `).join('') || '<p style="color: var(--text-muted);">No posts yet</p>'}
+    </div>
+  `;
+}
+
+// ============================================
+// EVENT LOG
+// ============================================
+function logEvent(type, message) {
+  const event = {
+    time: new Date().toLocaleTimeString(),
+    type,
+    message
+  };
+  AppState.eventLog.unshift(event);
+  renderEventLog();
+}
+
+function renderEventLog() {
+  const filter = document.getElementById('logFilter')?.value || 'all';
+  const events = filter === 'all'
+    ? AppState.eventLog
+    : AppState.eventLog.filter(e => e.type === filter);
+
+  document.getElementById('eventLog').innerHTML = events.slice(0, 50).map(e => `
+    <div class="event-item">
+      <span class="event-time">${e.time}</span>
+      <span class="event-type ${e.type}">${e.type.toUpperCase()}</span>
+      <span class="event-message">${e.message}</span>
+    </div>
+  `).join('');
+}
+
+function filterEventLog() {
+  renderEventLog();
+}
+
+function exportLog() {
+  const blob = new Blob([JSON.stringify(AppState.eventLog, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'stego-demo-log.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ============================================
+// SCENARIOS
+// ============================================
+// ============================================
+// ABOUT MODAL
+// ============================================
+function openAboutModal() {
+  document.getElementById('aboutModal').classList.add('open');
+}
+
+function closeAboutModal() {
+  document.getElementById('aboutModal').classList.remove('open');
+}
+
+// ============================================
+// SCENARIOS
+// ============================================
+function openScenarioModal() {
+  document.getElementById('scenarioModal').classList.add('open');
+}
+
+function closeScenarioModal() {
+  document.getElementById('scenarioModal').classList.remove('open');
+}
+
+async function loadScenario(scenario) {
+  closeScenarioModal();
+  await resetDemo();
+
+  switch (scenario) {
+    case 'quick':
+      document.getElementById('messageInput').value = 'HI';
+      await initMessage('HI');
+      setMode('auto');
+      break;
+
+    case 'educational':
+      document.getElementById('messageInput').value = 'OK';
+      await initMessage('OK');
+      setMode('step');
+      showStepExplanation(
+        'Educational Walkthrough',
+        'This walkthrough will guide you through transmitting a secret message. ' +
+        'Watch how posts are classified as signal or cover based on their hash.'
+      );
+      break;
+
+    case 'epoch':
+      document.getElementById('messageInput').value = 'TEST';
+      await initMessage('TEST');
+      // Will trigger epoch change mid-transmission
+      setTimeout(() => Beacon.nextEpoch(), 30000);
+      break;
+
+    case 'long':
+      document.getElementById('messageInput').value = 'HELLO WORLD';
+      await initMessage('HELLO WORLD');
+      break;
+  }
+
+  logEvent('scenario', `Loaded scenario: ${scenario}`);
+}
+
+// ============================================
+// RESET & INIT
+// ============================================
+async function resetDemo() {
+  // Reset state
+  AppState.posts = [];
+  AppState.sender.bitsSent = 0;
+  AppState.sender.signalCount = 0;
+  AppState.sender.coverCount = 0;
+  AppState.sender.complete = false;
+  AppState.receiver.bitBuffer = [];
+  AppState.receiver.frameState = 'waiting_header';
+  AppState.receiver.decodedMessage = '';
+  AppState.beacon.epoch = 1;
+  AppState.eventLog = [];
+  postIdCounter = 0;
+
+  await Beacon.init();
+  await initMessage(document.getElementById('messageInput').value || 'HELLO');
+
+  updateUI();
+  updateFeatureDisplay();
+  logEvent('reset', 'Demo reset');
+}
+
+async function initMessage(message) {
+  AppState.sender.message = message;
+  AppState.sender.messageBits = Protocol.messageToBits(message);
+
+  // Update binary display
+  const binaryStr = AppState.sender.messageBits
+    .join('')
+    .match(/.{1,8}/g)
+    ?.join(' ') || '';
+  document.getElementById('binaryDisplay').textContent =
+    `Binary: ${binaryStr} (${AppState.sender.messageBits.length} bits)`;
+
+  updateFeatureDisplay();
+}
+
+// ============================================
+// UTILITIES
+// ============================================
+function formatTime(timestamp) {
+  const date = new Date(timestamp);
+  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// Keyboard shortcuts
+document.addEventListener('keydown', (e) => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+  if (e.key === 'i' || e.key === 'I') {
+    toggleInspector();
+  }
+  if (e.key === 'Escape') {
+    closeAboutModal();
+    closeScenarioModal();
+    hideStepOverlay();
+  }
+});
+
+// Message input change
+document.getElementById('messageInput')?.addEventListener('change', async (e) => {
+  await initMessage(e.target.value);
+});
+
+// Speed slider
+document.getElementById('speedSlider')?.addEventListener('input', (e) => {
+  const speed = parseFloat(e.target.value);
+  AppState.beacon.speed = speed;
+  document.getElementById('speedValue').textContent = `${speed}x`;
+});
+
+// ============================================
+// INITIALIZATION
+// ============================================
+async function init() {
+  await Beacon.init();
+  await initMessage('HELLO');
+  updateUI();
+  updateFeatureDisplay();
+
+  // Inspector open by default (no hiding features)
+  AppState.ui.inspectorOpen = true;
+  document.getElementById('inspector').classList.add('open');
+  document.getElementById('splitView').classList.add('inspector-open');
+
+  logEvent('init', 'StegoChannel Demo initialized');
+  console.log('StegoChannel Interactive Demo loaded');
+}
+
+// Start the demo
+init();
+</script>
+</body>
+</html>
