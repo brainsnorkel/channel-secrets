@@ -37,3 +37,6 @@ export type {
 
 export { HelpSection, HelpLink, HelpHeaderLink } from './HelpSection';
 export type { HelpSectionProps, HelpLinkProps, HelpTab } from './HelpSection';
+
+export { FeatureBitsDisplay } from './FeatureBitsDisplay';
+export type { FeatureBitsDisplayProps } from './FeatureBitsDisplay';

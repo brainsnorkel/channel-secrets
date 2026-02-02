@@ -1,0 +1,464 @@
+/* Overlay */
+.wizard-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+/* Modal */
+.wizard-modal {
+  background: var(--color-bg, white);
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  max-width: 520px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: wizard-slide-in 0.3s ease;
+}
+
+@keyframes wizard-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Progress indicator */
+.wizard-progress {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  padding: 20px 20px 0;
+}
+
+.wizard-progress-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-border, #ddd);
+  transition: all 0.2s ease;
+}
+
+.wizard-progress-dot.active {
+  background: var(--color-primary, #0066cc);
+  transform: scale(1.25);
+}
+
+.wizard-progress-dot.completed {
+  background: var(--color-primary, #0066cc);
+}
+
+/* Header */
+.wizard-header {
+  text-align: center;
+  padding: 16px 24px;
+}
+
+.wizard-step-number {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--color-text-secondary, #666);
+  margin-bottom: 8px;
+}
+
+.wizard-title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--color-text, #333);
+}
+
+.wizard-subtitle {
+  margin: 8px 0 0;
+  font-size: 14px;
+  color: var(--color-text-secondary, #666);
+}
+
+/* Body */
+.wizard-body {
+  padding: 0 24px 24px;
+}
+
+.wizard-step-content {
+  min-height: 240px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.wizard-icon {
+  font-size: 48px;
+  text-align: center;
+  margin: 16px 0;
+}
+
+.wizard-text {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--color-text, #333);
+  margin: 0;
+}
+
+.wizard-text-small {
+  font-size: 12px;
+  color: var(--color-text-secondary, #666);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.wizard-text-small.warning {
+  background: #fff3cd;
+  border-left: 3px solid #f39c12;
+  padding: 12px;
+  border-radius: 4px;
+}
+
+/* Action buttons (Step 2) */
+.wizard-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 8px 0;
+}
+
+.wizard-action-button {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+}
+
+.wizard-action-button.primary {
+  background: var(--color-primary, #0066cc);
+  color: white;
+  border: none;
+}
+
+.wizard-action-button.primary:hover {
+  background: var(--color-primary-dark, #0052a3);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 102, 204, 0.3);
+}
+
+.wizard-action-button.secondary {
+  background: var(--color-bg, white);
+  color: var(--color-text, #333);
+  border: 2px solid var(--color-border, #ddd);
+}
+
+.wizard-action-button.secondary:hover {
+  background: var(--color-bg-secondary, #f8f9fa);
+  border-color: var(--color-primary, #0066cc);
+}
+
+.wizard-action-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.wizard-action-button span:last-child {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.wizard-action-button strong {
+  display: block;
+  font-weight: 600;
+}
+
+.wizard-action-button small {
+  display: block;
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+/* Form elements */
+.wizard-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.wizard-form-group label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text, #333);
+}
+
+.wizard-input,
+.wizard-textarea {
+  padding: 10px 12px;
+  border: 1px solid var(--color-border, #ddd);
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--color-text, #333);
+  transition: border-color 0.15s ease;
+}
+
+.wizard-input:focus,
+.wizard-textarea:focus {
+  outline: none;
+  border-color: var(--color-primary, #0066cc);
+}
+
+.wizard-textarea {
+  resize: vertical;
+  font-family: var(--font-mono, monospace);
+  font-size: 12px;
+}
+
+.wizard-input-group {
+  display: flex;
+  gap: 8px;
+}
+
+.wizard-input-group .wizard-input {
+  flex: 1;
+}
+
+.wizard-input-button {
+  padding: 10px 16px;
+  border: 1px solid var(--color-border, #ddd);
+  border-radius: 6px;
+  background: var(--color-bg, white);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.wizard-input-button:hover {
+  background: var(--color-bg-secondary, #f8f9fa);
+}
+
+.wizard-help {
+  font-size: 11px;
+  color: var(--color-text-tertiary, #999);
+}
+
+/* Passphrase strength */
+.wizard-strength {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 4px;
+  position: relative;
+}
+
+.wizard-strength-bar {
+  height: 100%;
+  border-radius: 2px;
+  transition: all 0.3s ease;
+}
+
+.wizard-strength-label {
+  position: absolute;
+  right: 0;
+  top: -20px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+/* Validation */
+.wizard-validation {
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.wizard-validation.valid {
+  color: #2ecc71;
+  background: #d5f4e6;
+}
+
+.wizard-validation.invalid {
+  color: #e74c3c;
+  background: #fadbd8;
+}
+
+/* Info box */
+.wizard-info-box {
+  background: var(--color-bg-secondary, #f8f9fa);
+  border-left: 3px solid var(--color-primary, #0066cc);
+  padding: 12px;
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.wizard-info-box strong {
+  display: block;
+  margin-bottom: 8px;
+}
+
+.wizard-info-box ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.wizard-info-box li {
+  margin: 4px 0;
+  color: var(--color-text-secondary, #666);
+}
+
+/* Button group */
+.wizard-button-group {
+  display: flex;
+  gap: 8px;
+}
+
+/* Review box */
+.wizard-review-box {
+  background: var(--color-bg-secondary, #f8f9fa);
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.wizard-review-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+}
+
+.wizard-review-label {
+  color: var(--color-text-secondary, #666);
+  font-weight: 500;
+}
+
+.wizard-review-value {
+  color: var(--color-text, #333);
+  font-weight: 600;
+}
+
+/* Success */
+.wizard-success-icon {
+  font-size: 64px;
+  text-align: center;
+  color: #2ecc71;
+  margin: 8px 0;
+}
+
+.wizard-success-title {
+  text-align: center;
+  margin: 0 0 16px;
+  font-size: 20px;
+  color: var(--color-text, #333);
+}
+
+.wizard-key-box {
+  display: flex;
+  gap: 8px;
+  padding: 12px;
+  background: var(--color-bg-secondary, #f8f9fa);
+  border: 1px solid var(--color-border, #ddd);
+  border-radius: 6px;
+  margin: 12px 0;
+}
+
+.wizard-key-text {
+  flex: 1;
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  word-break: break-all;
+  color: var(--color-text-secondary, #666);
+}
+
+.wizard-key-copy {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  background: var(--color-primary, #0066cc);
+  color: white;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  flex-shrink: 0;
+}
+
+.wizard-key-copy:hover {
+  background: var(--color-primary-dark, #0052a3);
+}
+
+/* Footer navigation */
+.wizard-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px 24px;
+  border-top: 1px solid var(--color-border-light, #eee);
+}
+
+.wizard-footer-left,
+.wizard-footer-right {
+  display: flex;
+  gap: 12px;
+}
+
+.wizard-button {
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.wizard-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.wizard-button.primary {
+  background: var(--color-primary, #0066cc);
+  color: white;
+  border: none;
+}
+
+.wizard-button.primary:hover:not(:disabled) {
+  background: var(--color-primary-dark, #0052a3);
+}
+
+.wizard-button.secondary {
+  background: var(--color-bg, white);
+  color: var(--color-text, #333);
+  border: 1px solid var(--color-border, #ddd);
+}
+
+.wizard-button.secondary:hover {
+  background: var(--color-bg-secondary, #f8f9fa);
+}
+
+.wizard-button.tertiary {
+  background: transparent;
+  color: var(--color-text-secondary, #666);
+  border: none;
+}
+
+.wizard-button.tertiary:hover {
+  color: var(--color-text, #333);
+}

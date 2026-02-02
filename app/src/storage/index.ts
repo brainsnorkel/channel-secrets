@@ -418,3 +418,48 @@ export function lockStorage(storage: StorageInterface): void {
 export function isUnlocked(storage: StorageInterface): boolean {
   return storage.isUnlocked();
 }
+
+// Bluesky session persistence
+// AtpSessionData type from @atproto/api
+export interface AtpSessionData {
+  did: string;
+  handle: string;
+  accessJwt: string;
+  refreshJwt: string;
+  active: boolean;
+  email?: string;
+  emailConfirmed?: boolean;
+  emailAuthFactor?: boolean;
+}
+
+const BLUESKY_SESSION_KEY = 'bluesky_session';
+
+// Save Bluesky session (encrypted)
+export async function saveBlueskySession(
+  storage: StorageInterface,
+  session: AtpSessionData
+): Promise<void> {
+  await storage.saveCredential(BLUESKY_SESSION_KEY, session);
+}
+
+// Get stored Bluesky session (decrypted)
+export async function getBlueskySession(
+  storage: StorageInterface
+): Promise<AtpSessionData | null> {
+  return storage.getCredential<AtpSessionData>(BLUESKY_SESSION_KEY);
+}
+
+// Clear stored Bluesky session (for logout)
+export async function clearBlueskySession(
+  storage: StorageInterface
+): Promise<void> {
+  await storage.deleteCredential(BLUESKY_SESSION_KEY);
+}
+
+// Check if Bluesky session exists
+export async function hasBlueskySession(
+  storage: StorageInterface
+): Promise<boolean> {
+  const session = await getBlueskySession(storage);
+  return session !== null;
+}

@@ -1,0 +1,241 @@
+.transmission-progress {
+  padding: 20px;
+  background: var(--color-surface, #1a1a1a);
+  border: 1px solid var(--color-border, #333);
+  border-radius: 8px;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.transmission-progress--complete {
+  border-color: var(--color-success, #22c55e);
+}
+
+.transmission-progress__header {
+  margin-bottom: 16px;
+}
+
+.transmission-progress__title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text-primary, #e7e9ea);
+  margin: 0 0 8px 0;
+}
+
+.transmission-progress__message {
+  font-size: 14px;
+  color: var(--color-text-secondary, #8b949e);
+  margin: 0;
+  font-style: italic;
+}
+
+.transmission-progress__bar-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.transmission-progress__bar {
+  flex: 1;
+  height: 8px;
+  background: var(--color-surface-secondary, #2a2a2a);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.transmission-progress__bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--color-primary, #1d9bf0) 0%, var(--color-success, #22c55e) 100%);
+  border-radius: 4px;
+  transition: width 0.5s ease;
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% { opacity: 0.8; }
+  50% { opacity: 1; }
+  100% { opacity: 0.8; }
+}
+
+.transmission-progress__percentage {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-primary, #1d9bf0);
+  min-width: 40px;
+  text-align: right;
+}
+
+.transmission-progress__stats {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding: 12px;
+  background: var(--color-surface-secondary, #2a2a2a);
+  border-radius: 6px;
+}
+
+.transmission-progress__stat {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.transmission-progress__stat-label {
+  font-size: 13px;
+  color: var(--color-text-tertiary, #71767b);
+}
+
+.transmission-progress__stat-value {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-primary, #e7e9ea);
+}
+
+.transmission-progress__epoch {
+  padding: 12px;
+  background: var(--color-surface-secondary, #2a2a2a);
+  border-radius: 6px;
+  margin-bottom: 16px;
+  border: 1px solid transparent;
+  transition: all 0.3s ease;
+}
+
+.transmission-progress__epoch--warning {
+  background: rgba(255, 193, 7, 0.1);
+  border-color: var(--color-warning, #ffc107);
+}
+
+.transmission-progress__epoch-id,
+.transmission-progress__epoch-timer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.transmission-progress__epoch-timer {
+  margin-bottom: 0;
+}
+
+.transmission-progress__epoch-label {
+  font-size: 12px;
+  color: var(--color-text-tertiary, #71767b);
+}
+
+.transmission-progress__epoch-value {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-primary, #e7e9ea);
+}
+
+.transmission-progress__epoch--warning .transmission-progress__epoch-value {
+  color: var(--color-warning, #ffc107);
+}
+
+.transmission-progress__epoch-warning-icon {
+  margin-right: 6px;
+  color: var(--color-warning, #ffc107);
+}
+
+.transmission-progress__actions {
+  margin-top: 16px;
+}
+
+.transmission-progress__button {
+  width: 100%;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.transmission-progress__button--cancel {
+  background: var(--color-surface-secondary, #2a2a2a);
+  color: var(--color-text-secondary, #8b949e);
+  border: 1px solid var(--color-border, #333);
+}
+
+.transmission-progress__button--cancel:hover {
+  background: var(--color-surface-tertiary, #3a3a3a);
+  color: var(--color-text-primary, #e7e9ea);
+}
+
+.transmission-progress__cancel-confirm {
+  text-align: center;
+}
+
+.transmission-progress__cancel-message {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  color: var(--color-text-secondary, #8b949e);
+}
+
+.transmission-progress__cancel-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.transmission-progress__button--danger {
+  background: var(--color-error, #f91880);
+  color: white;
+  flex: 1;
+}
+
+.transmission-progress__button--danger:hover {
+  background: var(--color-error-hover, #c7135f);
+}
+
+.transmission-progress__button--secondary {
+  background: var(--color-surface-secondary, #2a2a2a);
+  color: var(--color-text-primary, #e7e9ea);
+  border: 1px solid var(--color-border, #333);
+  flex: 1;
+}
+
+.transmission-progress__button--secondary:hover {
+  background: var(--color-surface-tertiary, #3a3a3a);
+}
+
+.transmission-progress__celebration {
+  text-align: center;
+  padding: 20px;
+}
+
+.transmission-progress__check-icon {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 16px;
+  border-radius: 50%;
+  background: var(--color-success, #22c55e);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  font-weight: bold;
+  animation: scaleIn 0.5s ease;
+}
+
+@keyframes scaleIn {
+  0% { transform: scale(0); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+.transmission-progress__complete-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--color-success, #22c55e);
+  margin: 0 0 8px 0;
+}
+
+.transmission-progress__complete-details {
+  font-size: 14px;
+  color: var(--color-text-secondary, #8b949e);
+  margin: 0;
+}

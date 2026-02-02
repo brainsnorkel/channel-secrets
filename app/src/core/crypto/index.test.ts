@@ -11,6 +11,10 @@ import {
   bytesToUint64BE,
   concat,
   stringToBytes,
+  deriveChannelKeyFromPassphrase,
+  generateRandomPassphrase,
+  estimatePassphraseStrength,
+  validateChannelKeyFormat,
 } from './index';
 
 describe('Crypto Module', () => {
@@ -134,6 +138,212 @@ describe('Crypto Module', () => {
       const c = new Uint8Array([5]);
       const result = concat(a, b, c);
       expect(Array.from(result)).toEqual([1, 2, 3, 4, 5]);
+    });
+  });
+
+  describe('T6: Passphrase Key Derivation', () => {
+    describe('deriveChannelKeyFromPassphrase', () => {
+      it('should derive deterministic key from handles', async () => {
+        const passphrase = 'correct horse battery staple';
+        const result = await deriveChannelKeyFromPassphrase(
+          passphrase,
+          '@alice',
+          '@bob'
+        );
+
+        expect(result.key.length).toBe(32);
+        expect(result.salt.length).toBe(16);
+        expect(result.saltMode).toBe('handles');
+      });
+
+      it('should produce same key regardless of handle order', async () => {
+        const passphrase = 'test passphrase';
+        const result1 = await deriveChannelKeyFromPassphrase(
+          passphrase,
+          '@alice',
+          '@bob'
+        );
+        const result2 = await deriveChannelKeyFromPassphrase(
+          passphrase,
+          '@bob',
+          '@alice'
+        );
+
+        expect(bytesToHex(result1.key)).toBe(bytesToHex(result2.key));
+        expect(bytesToHex(result1.salt)).toBe(bytesToHex(result2.salt));
+      });
+
+      it('should use random salt when provided', async () => {
+        const passphrase = 'test passphrase';
+        const randomSalt = new Uint8Array(16);
+        for (let i = 0; i < 16; i++) randomSalt[i] = i;
+
+        const result = await deriveChannelKeyFromPassphrase(
+          passphrase,
+          '@alice',
+          '@bob',
+          { randomSalt }
+        );
+
+        expect(result.saltMode).toBe('random');
+        expect(bytesToHex(result.salt)).toBe(bytesToHex(randomSalt));
+      });
+
+      it('should throw on invalid salt length', async () => {
+        const passphrase = 'test passphrase';
+        const invalidSalt = new Uint8Array(10); // Wrong size
+
+        await expect(
+          deriveChannelKeyFromPassphrase(
+            passphrase,
+            '@alice',
+            '@bob',
+            { randomSalt: invalidSalt }
+          )
+        ).rejects.toThrow('Random salt must be 16 bytes');
+      });
+
+      it('should produce different keys for different passphrases', async () => {
+        const result1 = await deriveChannelKeyFromPassphrase(
+          'passphrase1',
+          '@alice',
+          '@bob'
+        );
+        const result2 = await deriveChannelKeyFromPassphrase(
+          'passphrase2',
+          '@alice',
+          '@bob'
+        );
+
+        expect(bytesToHex(result1.key)).not.toBe(bytesToHex(result2.key));
+      });
+    });
+
+    describe('generateRandomPassphrase', () => {
+      it('should generate passphrase with default 4 words', () => {
+        const passphrase = generateRandomPassphrase();
+        const words = passphrase.split(' ');
+        expect(words.length).toBe(4);
+      });
+
+      it('should generate passphrase with custom word count', () => {
+        const passphrase = generateRandomPassphrase(6);
+        const words = passphrase.split(' ');
+        expect(words.length).toBe(6);
+      });
+
+      it('should generate different passphrases', () => {
+        const p1 = generateRandomPassphrase();
+        const p2 = generateRandomPassphrase();
+        // Extremely unlikely to be equal
+        expect(p1).not.toBe(p2);
+      });
+
+      it('should throw on invalid word count', () => {
+        expect(() => generateRandomPassphrase(0)).toThrow();
+        expect(() => generateRandomPassphrase(13)).toThrow();
+      });
+    });
+
+    describe('estimatePassphraseStrength', () => {
+      it('should rate very weak passphrases', () => {
+        const result = estimatePassphraseStrength('weak');
+        expect(result.score).toBe(0);
+        expect(result.feedback).toContain('Very weak');
+      });
+
+      it('should rate weak passphrases', () => {
+        const result = estimatePassphraseStrength('password');
+        expect(result.score).toBe(1);
+        expect(result.feedback).toContain('Weak');
+      });
+
+      it('should rate fair passphrases', () => {
+        const result = estimatePassphraseStrength('two words here');
+        expect(result.score).toBe(2);
+        expect(result.feedback).toContain('Fair');
+      });
+
+      it('should rate good passphrases', () => {
+        const result = estimatePassphraseStrength('correct horse battery staple');
+        expect(result.score).toBe(3);
+        expect(result.feedback).toContain('Good');
+      });
+
+      it('should rate strong passphrases', () => {
+        const result = estimatePassphraseStrength(
+          'the quick brown fox jumps over lazy dog'
+        );
+        expect(result.score).toBe(4);
+        expect(result.feedback).toContain('Strong');
+      });
+    });
+
+    describe('validateChannelKeyFormat', () => {
+      it('should validate correct channel key format', () => {
+        const keyString =
+          'stegochannel:v0:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA:date:0.25:len,media,punct';
+        const result = validateChannelKeyFormat(keyString);
+
+        expect(result.valid).toBe(true);
+        expect(result.parsed?.beacon).toBe('date');
+        expect(result.parsed?.rate).toBe(0.25);
+        expect(result.parsed?.features).toBe('len,media,punct');
+      });
+
+      it('should reject wrong part count', () => {
+        const result = validateChannelKeyFormat('stegochannel:v0:key');
+        expect(result.valid).toBe(false);
+        expect(result.error).toContain('Expected 6 colon-separated parts');
+      });
+
+      it('should reject wrong prefix', () => {
+        const result = validateChannelKeyFormat(
+          'wrongprefix:v0:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA:date:0.25:len'
+        );
+        expect(result.valid).toBe(false);
+        expect(result.error).toContain('Invalid prefix');
+      });
+
+      it('should reject unsupported version', () => {
+        const result = validateChannelKeyFormat(
+          'stegochannel:v1:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA:date:0.25:len'
+        );
+        expect(result.valid).toBe(false);
+        expect(result.error).toContain('Unsupported version');
+      });
+
+      it('should reject invalid beacon', () => {
+        const result = validateChannelKeyFormat(
+          'stegochannel:v0:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA:invalid:0.25:len'
+        );
+        expect(result.valid).toBe(false);
+        expect(result.error).toContain('Invalid beacon');
+      });
+
+      it('should reject invalid rate', () => {
+        const result = validateChannelKeyFormat(
+          'stegochannel:v0:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA:date:1.5:len'
+        );
+        expect(result.valid).toBe(false);
+        expect(result.error).toContain('Invalid rate');
+      });
+
+      it('should reject invalid features', () => {
+        const result = validateChannelKeyFormat(
+          'stegochannel:v0:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA:date:0.25:invalid'
+        );
+        expect(result.valid).toBe(false);
+        expect(result.error).toContain('Invalid feature');
+      });
+
+      it('should validate multiple features', () => {
+        const result = validateChannelKeyFormat(
+          'stegochannel:v0:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA:btc:0.5:len,media,punct,emoji'
+        );
+        expect(result.valid).toBe(true);
+        expect(result.parsed?.features).toBe('len,media,punct,emoji');
+      });
     });
   });
 });

@@ -1,0 +1,254 @@
+/* Feature Bits Display Container */
+.feature-bits-display {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.feature-bits-container {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+
+/* Individual Bit Box */
+.feature-bit {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 48px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 2px solid;
+  transition: all 0.3s ease;
+  cursor: help;
+}
+
+/* Compact mode */
+.feature-bits-display.compact .feature-bit {
+  min-width: 36px;
+  padding: 6px 8px;
+}
+
+/* Bit value */
+.feature-bit-value {
+  font-size: 20px;
+  font-weight: 700;
+  font-family: var(--font-mono, 'Courier New', monospace);
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.feature-bits-display.compact .feature-bit-value {
+  font-size: 18px;
+  margin-bottom: 0;
+}
+
+/* Bit label */
+.feature-bit-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  opacity: 0.8;
+}
+
+/* Color states */
+.feature-bit.match {
+  background-color: var(--color-success-bg, #e6f7e6);
+  border-color: var(--color-success, #28a745);
+  color: var(--color-success-dark, #1e7e34);
+}
+
+.feature-bit.mismatch {
+  background-color: var(--color-error-bg, #ffe6e6);
+  border-color: var(--color-error, #dc3545);
+  color: var(--color-error-dark, #bd2130);
+}
+
+.feature-bit.neutral {
+  background-color: var(--color-bg-secondary, #f8f9fa);
+  border-color: var(--color-border, #dee2e6);
+  color: var(--color-text, #333);
+}
+
+/* Hover effects */
+.feature-bit.match:hover {
+  background-color: var(--color-success-bg-hover, #d4f0d4);
+  border-color: var(--color-success-dark, #1e7e34);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(40, 167, 69, 0.2);
+}
+
+.feature-bit.mismatch:hover {
+  background-color: var(--color-error-bg-hover, #ffd4d4);
+  border-color: var(--color-error-dark, #bd2130);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(220, 53, 69, 0.2);
+}
+
+.feature-bit.neutral:hover {
+  background-color: var(--color-bg-hover, #e9ecef);
+  border-color: var(--color-border-dark, #adb5bd);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Animation on bit change */
+.feature-bit.animating {
+  animation: bit-pulse 0.6s ease;
+}
+
+@keyframes bit-pulse {
+  0% {
+    transform: scale(1);
+  }
+  25% {
+    transform: scale(1.15);
+    box-shadow: 0 0 16px rgba(0, 102, 204, 0.4);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  75% {
+    transform: scale(1.15);
+    box-shadow: 0 0 16px rgba(0, 102, 204, 0.4);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.feature-bit.animating.match {
+  animation: bit-pulse-success 0.6s ease;
+}
+
+@keyframes bit-pulse-success {
+  0% {
+    transform: scale(1);
+  }
+  25% {
+    transform: scale(1.15);
+    box-shadow: 0 0 20px rgba(40, 167, 69, 0.5);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  75% {
+    transform: scale(1.15);
+    box-shadow: 0 0 20px rgba(40, 167, 69, 0.5);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.feature-bit.animating.mismatch {
+  animation: bit-pulse-error 0.6s ease;
+}
+
+@keyframes bit-pulse-error {
+  0% {
+    transform: scale(1);
+  }
+  25% {
+    transform: scale(1.15);
+    box-shadow: 0 0 20px rgba(220, 53, 69, 0.5);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  75% {
+    transform: scale(1.15);
+    box-shadow: 0 0 20px rgba(220, 53, 69, 0.5);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Diff display */
+.feature-bits-diff {
+  font-size: 12px;
+  color: var(--color-text-secondary, #666);
+  padding: 6px 12px;
+  background-color: var(--color-bg-secondary, #f8f9fa);
+  border-radius: 4px;
+  border: 1px solid var(--color-border, #dee2e6);
+}
+
+.diff-label {
+  font-weight: 600;
+  color: var(--color-text, #333);
+}
+
+.diff-value {
+  font-family: var(--font-mono, 'Courier New', monospace);
+  font-weight: 700;
+  color: var(--color-primary, #0066cc);
+}
+
+/* Match indicator */
+.feature-bits-match-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  background-color: var(--color-success-bg, #e6f7e6);
+  color: var(--color-success-dark, #1e7e34);
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid var(--color-success, #28a745);
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .feature-bit {
+    min-width: 40px;
+    padding: 6px 10px;
+  }
+
+  .feature-bit-value {
+    font-size: 18px;
+  }
+
+  .feature-bit-label {
+    font-size: 9px;
+  }
+
+  .feature-bits-display.compact .feature-bit {
+    min-width: 32px;
+    padding: 4px 6px;
+  }
+
+  .feature-bits-display.compact .feature-bit-value {
+    font-size: 16px;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .feature-bit.neutral {
+    background-color: var(--color-bg-secondary-dark, #2d3748);
+    border-color: var(--color-border-dark, #4a5568);
+    color: var(--color-text-dark, #e2e8f0);
+  }
+
+  .feature-bit.neutral:hover {
+    background-color: var(--color-bg-hover-dark, #4a5568);
+    border-color: var(--color-border-light-dark, #718096);
+  }
+
+  .feature-bits-diff {
+    background-color: var(--color-bg-secondary-dark, #2d3748);
+    border-color: var(--color-border-dark, #4a5568);
+    color: var(--color-text-secondary-dark, #a0aec0);
+  }
+
+  .diff-label {
+    color: var(--color-text-dark, #e2e8f0);
+  }
+}

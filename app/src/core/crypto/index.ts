@@ -299,3 +299,334 @@ export function concat(...buffers: Uint8Array[]): Uint8Array {
   }
   return result;
 }
+
+// ============================================================================
+// T6: Passphrase Key Derivation
+// ============================================================================
+
+/**
+ * Built-in word list for passphrase generation (EFF short wordlist subset)
+ */
+const PASSPHRASE_WORDLIST = [
+  'able', 'acid', 'aged', 'also', 'area', 'army', 'away', 'baby', 'back', 'ball',
+  'band', 'bank', 'base', 'bath', 'beam', 'bear', 'beat', 'been', 'beer', 'bell',
+  'belt', 'bent', 'best', 'bill', 'bird', 'blow', 'blue', 'boat', 'body', 'bone',
+  'book', 'born', 'boss', 'both', 'bowl', 'bulk', 'burn', 'bush', 'busy', 'call',
+  'calm', 'came', 'camp', 'card', 'care', 'case', 'cash', 'cast', 'cell', 'chat',
+  'chip', 'city', 'club', 'coal', 'coat', 'code', 'cold', 'come', 'cook', 'cool',
+  'cope', 'copy', 'core', 'cost', 'crew', 'crop', 'dark', 'data', 'date', 'dawn',
+  'days', 'dead', 'deal', 'dean', 'dear', 'debt', 'deep', 'deny', 'desk', 'dial',
+  'diet', 'disc', 'dish', 'disk', 'does', 'done', 'door', 'dose', 'down', 'draw',
+  'drew', 'drop', 'drug', 'dual', 'duke', 'dust', 'duty', 'each', 'earn', 'ease',
+  'east', 'easy', 'edge', 'else', 'even', 'ever', 'face', 'fact', 'fail', 'fair',
+  'fall', 'farm', 'fast', 'fate', 'fear', 'feed', 'feel', 'feet', 'fell', 'felt',
+  'file', 'fill', 'film', 'find', 'fine', 'fire', 'firm', 'fish', 'five', 'flat',
+  'flow', 'food', 'foot', 'ford', 'form', 'fort', 'four', 'free', 'from', 'fuel',
+  'full', 'fund', 'gain', 'game', 'gate', 'gave', 'gear', 'gene', 'gift', 'girl',
+  'give', 'glad', 'goal', 'goes', 'gold', 'golf', 'gone', 'good', 'gray', 'grew',
+  'grey', 'grow', 'gulf', 'half', 'hall', 'hand', 'hang', 'hard', 'harm', 'hate',
+  'have', 'head', 'hear', 'heat', 'held', 'hell', 'help', 'here', 'hero', 'high',
+  'hill', 'hire', 'hold', 'hole', 'holy', 'home', 'hope', 'host', 'hour', 'huge',
+  'hung', 'hunt', 'hurt', 'idea', 'inch', 'into', 'iron', 'item', 'jack', 'jane',
+  'jean', 'john', 'join', 'jump', 'jury', 'just', 'keen', 'keep', 'kent', 'kept',
+  'kick', 'kill', 'kind', 'king', 'knee', 'knew', 'know', 'lack', 'lady', 'laid',
+  'lake', 'land', 'lane', 'last', 'late', 'lead', 'left', 'less', 'life', 'lift',
+  'like', 'line', 'link', 'list', 'live', 'load', 'loan', 'lock', 'long', 'look',
+  'lord', 'lose', 'loss', 'lost', 'love', 'luck', 'made', 'mail', 'main', 'make',
+  'male', 'mall', 'many', 'mark', 'mass', 'matt', 'meal', 'mean', 'meat', 'meet',
+  'menu', 'mere', 'mike', 'mile', 'milk', 'mill', 'mind', 'mine', 'miss', 'mode',
+  'mood', 'moon', 'more', 'most', 'move', 'much', 'must', 'name', 'navy', 'near',
+  'neck', 'need', 'news', 'next', 'nice', 'nick', 'nine', 'none', 'nose', 'note',
+  'okay', 'once', 'only', 'onto', 'open', 'oral', 'over', 'pace', 'pack', 'page',
+  'paid', 'pain', 'pair', 'palm', 'park', 'part', 'pass', 'past', 'path', 'peak',
+  'pick', 'pink', 'pipe', 'plan', 'play', 'plot', 'plus', 'poll', 'pool', 'poor',
+  'port', 'post', 'pull', 'pure', 'push', 'race', 'rail', 'rain', 'rang', 'rank',
+  'rare', 'rate', 'read', 'real', 'rear', 'rely', 'rent', 'rest', 'rice', 'rich',
+  'ride', 'ring', 'rise', 'risk', 'road', 'rock', 'role', 'roll', 'roof', 'room',
+  'root', 'rose', 'rule', 'rush', 'ruth', 'safe', 'said', 'sake', 'sale', 'salt',
+  'same', 'sand', 'save', 'seat', 'seed', 'seek', 'seem', 'seen', 'self', 'sell',
+  'send', 'sent', 'sept', 'ship', 'shop', 'shot', 'show', 'shut', 'sick', 'side',
+  'sign', 'sing', 'sink', 'site', 'size', 'skin', 'slow', 'snow', 'soft', 'soil',
+  'sold', 'sole', 'some', 'song', 'soon', 'sort', 'soul', 'spot', 'star', 'stay',
+  'step', 'stop', 'such', 'suit', 'sure', 'take', 'tale', 'talk', 'tall', 'tank',
+  'tape', 'task', 'team', 'tech', 'tell', 'tend', 'term', 'test', 'text', 'than',
+  'that', 'them', 'then', 'they', 'thin', 'this', 'thus', 'till', 'time', 'tiny',
+  'told', 'toll', 'tone', 'took', 'tool', 'tour', 'town', 'tree', 'trip', 'true',
+  'tune', 'turn', 'twin', 'type', 'unit', 'upon', 'used', 'user', 'vary', 'vast',
+  'very', 'vice', 'view', 'vote', 'wage', 'wait', 'wake', 'walk', 'wall', 'want',
+  'ward', 'warm', 'warn', 'wash', 'wave', 'ways', 'weak', 'wear', 'week', 'well',
+  'went', 'were', 'west', 'what', 'when', 'wide', 'wife', 'wild', 'will', 'wind',
+  'wine', 'wing', 'wire', 'wise', 'wish', 'with', 'wood', 'word', 'wore', 'work',
+  'worn', 'yard', 'yeah', 'year', 'your', 'zero', 'zone'
+];
+
+/**
+ * Channel key data structure
+ */
+export interface ChannelKeyData {
+  key: string; // base64url encoded key
+  beacon: string;
+  rate: number;
+  features: string;
+}
+
+/**
+ * Result of passphrase-based channel key derivation
+ */
+export interface PassphraseDerivationResult {
+  key: Uint8Array;
+  salt: Uint8Array;
+  saltMode: 'handles' | 'random';
+}
+
+/**
+ * Derive channel key from a shared passphrase
+ * Per SPEC Section 4.3: Passphrase-Based Channel Setup
+ *
+ * @param passphrase - Shared passphrase
+ * @param myHandle - Your social media handle
+ * @param theirHandle - Their social media handle
+ * @param options - Optional parameters
+ * @param options.randomSalt - Use random salt instead of handle-derived (16 bytes)
+ * @returns Derived key, salt, and salt mode
+ *
+ * @example
+ * // Handle-derived salt (default)
+ * const result = await deriveChannelKeyFromPassphrase(
+ *   "correct horse battery staple",
+ *   "@alice",
+ *   "@bob"
+ * );
+ *
+ * @example
+ * // Random salt (must be shared out-of-band)
+ * const randomSalt = sodium.randombytes_buf(16);
+ * const result = await deriveChannelKeyFromPassphrase(
+ *   "correct horse battery staple",
+ *   "@alice",
+ *   "@bob",
+ *   { randomSalt }
+ * );
+ */
+export async function deriveChannelKeyFromPassphrase(
+  passphrase: string,
+  myHandle: string,
+  theirHandle: string,
+  options?: { randomSalt?: Uint8Array }
+): Promise<PassphraseDerivationResult> {
+  let salt: Uint8Array;
+  let saltMode: 'handles' | 'random';
+
+  if (options?.randomSalt) {
+    // Use provided random salt
+    if (options.randomSalt.length !== 16) {
+      throw new Error('Random salt must be 16 bytes');
+    }
+    salt = options.randomSalt;
+    saltMode = 'random';
+  } else {
+    // Derive deterministic salt from handles
+    const [h1, h2] = [myHandle, theirHandle].sort();
+    const saltInput = `stegochannel:v0:${h1}:${h2}`;
+    const saltHash = await sha256(stringToBytes(saltInput));
+    salt = saltHash.slice(0, 16);
+    saltMode = 'handles';
+  }
+
+  // Derive key using Argon2id
+  // iterations=3, memory=64MB as specified
+  const opsLimit = 3;
+  const memLimit = 64 * 1024 * 1024;
+
+  const key = argon2id(passphrase, salt, opsLimit, memLimit);
+
+  return { key, salt, saltMode };
+}
+
+/**
+ * Generate a random passphrase using a built-in word list
+ *
+ * @param wordCount - Number of words in the passphrase (default: 4)
+ * @returns Random passphrase as space-separated words
+ *
+ * @example
+ * const passphrase = generateRandomPassphrase(6);
+ * // Example output: "area blue code fire moon star"
+ */
+export function generateRandomPassphrase(wordCount: number = 4): string {
+  if (wordCount < 1) {
+    throw new Error('Word count must be at least 1');
+  }
+  if (wordCount > 12) {
+    throw new Error('Word count too large (max 12)');
+  }
+
+  const words: string[] = [];
+  for (let i = 0; i < wordCount; i++) {
+    const randomIndex = sodium.randombytes_uniform(PASSPHRASE_WORDLIST.length);
+    words.push(PASSPHRASE_WORDLIST[randomIndex]);
+  }
+
+  return words.join(' ');
+}
+
+/**
+ * Estimate passphrase strength
+ *
+ * @param passphrase - Passphrase to evaluate
+ * @returns Score (0-4) and feedback message
+ *
+ * Score meanings:
+ * - 0: Very weak (< 8 chars or trivial)
+ * - 1: Weak (8-11 chars or single word)
+ * - 2: Fair (12-15 chars or 2-3 words)
+ * - 3: Good (16-23 chars or 4-5 words)
+ * - 4: Strong (24+ chars or 6+ words)
+ *
+ * @example
+ * const result = estimatePassphraseStrength("correct horse battery staple");
+ * // { score: 3, feedback: "Good: 4 words, diverse character set" }
+ */
+export function estimatePassphraseStrength(passphrase: string): {
+  score: number;
+  feedback: string;
+} {
+  const length = passphrase.length;
+  const words = passphrase.trim().split(/\s+/);
+  const wordCount = words.length;
+
+  // Check character variety
+  const hasLower = /[a-z]/.test(passphrase);
+  const hasUpper = /[A-Z]/.test(passphrase);
+  const hasDigit = /[0-9]/.test(passphrase);
+  const hasSpecial = /[^a-zA-Z0-9\s]/.test(passphrase);
+  const varietyCount = [hasLower, hasUpper, hasDigit, hasSpecial].filter(Boolean).length;
+
+  // Scoring logic
+  let score = 0;
+  let feedback = '';
+
+  if (length < 8) {
+    score = 0;
+    feedback = 'Very weak: too short (minimum 8 characters)';
+  } else if (length < 12 || wordCount === 1) {
+    score = 1;
+    feedback = 'Weak: use multiple words or more characters';
+  } else if (length < 16 || wordCount <= 3) {
+    score = 2;
+    feedback = `Fair: ${wordCount} word${wordCount > 1 ? 's' : ''}, consider adding more`;
+  } else if (length < 24 || wordCount <= 5) {
+    score = 3;
+    feedback = `Good: ${wordCount} words${varietyCount >= 3 ? ', diverse character set' : ''}`;
+  } else {
+    score = 4;
+    feedback = `Strong: ${wordCount} words${varietyCount >= 3 ? ', excellent diversity' : ''}`;
+  }
+
+  return { score, feedback };
+}
+
+/**
+ * Validate channel key string format
+ * Format: stegochannel:v0:<base64url_key>:<beacon>:<rate>:<features>
+ *
+ * @param keyString - Channel key string to validate
+ * @returns Validation result with parsed data if valid
+ *
+ * @example
+ * const result = validateChannelKeyFormat(
+ *   "stegochannel:v0:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA:date:0.25:len,media,punct"
+ * );
+ * if (result.valid) {
+ *   console.log(result.parsed.beacon); // "date"
+ * }
+ */
+export function validateChannelKeyFormat(keyString: string): {
+  valid: boolean;
+  error?: string;
+  parsed?: ChannelKeyData;
+} {
+  const parts = keyString.split(':');
+
+  // Check part count
+  if (parts.length !== 6) {
+    return {
+      valid: false,
+      error: `Expected 6 colon-separated parts, got ${parts.length}`
+    };
+  }
+
+  const [prefix, version, keyBase64, beacon, rateStr, features] = parts;
+
+  // Validate prefix
+  if (prefix !== 'stegochannel') {
+    return {
+      valid: false,
+      error: `Invalid prefix: expected "stegochannel", got "${prefix}"`
+    };
+  }
+
+  // Validate version
+  if (version !== 'v0') {
+    return {
+      valid: false,
+      error: `Unsupported version: expected "v0", got "${version}"`
+    };
+  }
+
+  // Validate key (should be base64url, 32 bytes = 43 chars without padding)
+  if (!/^[A-Za-z0-9_-]+$/.test(keyBase64)) {
+    return {
+      valid: false,
+      error: 'Key must be base64url encoded (A-Z, a-z, 0-9, -, _)'
+    };
+  }
+
+  // Rough length check (32 bytes in base64url is ~43 chars)
+  if (keyBase64.length < 40 || keyBase64.length > 50) {
+    return {
+      valid: false,
+      error: `Key length suspicious: expected ~43 chars for 32 bytes, got ${keyBase64.length}`
+    };
+  }
+
+  // Validate beacon
+  const validBeacons = ['date', 'btc', 'nist'];
+  if (!validBeacons.includes(beacon)) {
+    return {
+      valid: false,
+      error: `Invalid beacon: expected one of ${validBeacons.join(', ')}, got "${beacon}"`
+    };
+  }
+
+  // Validate rate
+  const rate = parseFloat(rateStr);
+  if (isNaN(rate) || rate <= 0 || rate > 1) {
+    return {
+      valid: false,
+      error: `Invalid rate: must be between 0 and 1, got "${rateStr}"`
+    };
+  }
+
+  // Validate features (comma-separated list)
+  const featureList = features.split(',');
+  const validFeatures = ['len', 'media', 'punct', 'time', 'emoji'];
+  for (const feature of featureList) {
+    if (!validFeatures.includes(feature)) {
+      return {
+        valid: false,
+        error: `Invalid feature "${feature}": expected one of ${validFeatures.join(', ')}`
+      };
+    }
+  }
+
+  return {
+    valid: true,
+    parsed: {
+      key: keyBase64,
+      beacon,
+      rate,
+      features
+    }
+  };
+}

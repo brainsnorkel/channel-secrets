@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useTestingMode } from '../../context';
+import { BlueskyLogin } from '../BlueskyLogin/BlueskyLogin';
+import type { AtpSessionData } from '@atproto/api';
 import './OnboardingModal.css';
 
 /** Onboarding step definitions */
@@ -21,11 +23,26 @@ const STEPS = [
   },
   {
     id: 4,
+    title: 'Connect to Bluesky',
+    description: 'Access your account to monitor posts',
+  },
+  {
+    id: 5,
+    title: 'How Sending Works',
+    description: 'The sender workflow explained',
+  },
+  {
+    id: 6,
+    title: 'Try It: Bit Encoding',
+    description: 'See how post features encode data',
+  },
+  {
+    id: 7,
     title: 'Time Expectations',
     description: 'Why messages take days, not seconds',
   },
   {
-    id: 5,
+    id: 8,
     title: 'Your First Channel',
     description: 'Get started with secure messaging',
   },
@@ -40,6 +57,8 @@ export interface OnboardingModalProps {
   onCreateChannel?: () => void;
   /** Callback when user wants to import an existing channel */
   onImportChannel?: () => void;
+  /** Callback when Bluesky login succeeds */
+  onBlueskyLogin?: (session: AtpSessionData) => void;
 }
 
 /** Step 1: What is StegoChannel */
@@ -138,8 +157,150 @@ function Step3() {
   );
 }
 
-/** Step 4: Time Expectations */
-function Step4() {
+/** Step 4: Connect to Bluesky */
+function Step4({ onBlueskyLogin }: { onBlueskyLogin?: (session: AtpSessionData) => void }) {
+  return (
+    <div className="onboarding-step-content">
+      <p className="onboarding-text">
+        We need to access your Bluesky account to monitor posts and help you send messages.
+        This requires an <strong>app password</strong>, not your main password.
+      </p>
+      <div className="onboarding-diagram">
+        <div className="onboarding-bluesky-info">
+          <div className="onboarding-info-icon">🔐</div>
+          <p className="onboarding-info-text">
+            App passwords are safer and can be revoked anytime without changing your main password.
+          </p>
+        </div>
+      </div>
+      <div className="onboarding-bluesky-login-wrapper">
+        <BlueskyLogin
+          onLoginSuccess={(session) => {
+            onBlueskyLogin?.(session);
+          }}
+        />
+      </div>
+      <p className="onboarding-text-small">
+        <a
+          href="https://bsky.app/settings/app-passwords"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="onboarding-link"
+        >
+          Generate an app password in Bluesky settings
+        </a>
+      </p>
+    </div>
+  );
+}
+
+/** Step 5: How Sending Works */
+function Step5() {
+  return (
+    <div className="onboarding-step-content">
+      <div className="onboarding-diagram">
+        <div className="onboarding-sender-flow">
+          <div className="onboarding-flow-step">
+            <div className="onboarding-flow-number">1</div>
+            <div className="onboarding-flow-text">
+              <strong>Compose normal posts</strong>
+              <p>Write what you'd naturally share</p>
+            </div>
+          </div>
+          <div className="onboarding-flow-arrow">↓</div>
+          <div className="onboarding-flow-step">
+            <div className="onboarding-flow-number">2</div>
+            <div className="onboarding-flow-text">
+              <strong>Some carry hidden bits</strong>
+              <p>System selects ~25% as signal posts</p>
+            </div>
+          </div>
+          <div className="onboarding-flow-arrow">↓</div>
+          <div className="onboarding-flow-step">
+            <div className="onboarding-flow-number">3</div>
+            <div className="onboarding-flow-text">
+              <strong>Complete your message</strong>
+              <p>Multiple posts = full transmission</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p className="onboarding-text">
+        <strong>Key point:</strong> Your posts look completely normal to everyone else.
+        Only your recipient, with the shared key, can extract the hidden message.
+      </p>
+      <p className="onboarding-text">
+        You maintain your regular posting pattern—no suspicious behavior, no detectable changes.
+      </p>
+    </div>
+  );
+}
+
+/** Step 6: Interactive Feature Demo */
+function Step6() {
+  const [demoText, setDemoText] = useState('');
+  const [hasMedia, setHasMedia] = useState(false);
+
+  // Calculate feature bits
+  const lengthBit = demoText.length >= 50 ? 1 : 0;
+  const mediaBit = hasMedia ? 1 : 0;
+  const questionBit = demoText.includes('?') ? 1 : 0;
+  const bitsValue = (lengthBit << 2) | (mediaBit << 1) | questionBit;
+
+  return (
+    <div className="onboarding-step-content">
+      <p className="onboarding-text">
+        Try typing below and see how post features encode into bits in real-time:
+      </p>
+      <div className="onboarding-diagram">
+        <div className="onboarding-demo-compose">
+          <textarea
+            className="onboarding-demo-textarea"
+            placeholder="Type a post here..."
+            value={demoText}
+            onChange={(e) => setDemoText(e.target.value)}
+            maxLength={300}
+          />
+          <div className="onboarding-demo-controls">
+            <label className="onboarding-demo-checkbox">
+              <input
+                type="checkbox"
+                checked={hasMedia}
+                onChange={(e) => setHasMedia(e.target.checked)}
+              />
+              Has image/media
+            </label>
+            <span className="onboarding-demo-count">{demoText.length}/300</span>
+          </div>
+        </div>
+        <div className="onboarding-demo-features">
+          <div className={`onboarding-demo-bit ${lengthBit ? 'active' : ''}`}>
+            <span className="onboarding-demo-bit-label">Length ≥50</span>
+            <span className="onboarding-demo-bit-value">{lengthBit}</span>
+          </div>
+          <div className={`onboarding-demo-bit ${mediaBit ? 'active' : ''}`}>
+            <span className="onboarding-demo-bit-label">Has media</span>
+            <span className="onboarding-demo-bit-value">{mediaBit}</span>
+          </div>
+          <div className={`onboarding-demo-bit ${questionBit ? 'active' : ''}`}>
+            <span className="onboarding-demo-bit-label">Has ?</span>
+            <span className="onboarding-demo-bit-value">{questionBit}</span>
+          </div>
+        </div>
+        <div className="onboarding-demo-result">
+          Encoded bits: <code>0b{bitsValue.toString(2).padStart(3, '0')}</code> (decimal {bitsValue})
+        </div>
+      </div>
+      <p className="onboarding-text">
+        See? The bits depend on your post's content. The app guides you to match
+        the bits you need for your message.
+      </p>
+    </div>
+  );
+}
+
+/** Step 7: Time Expectations */
+function Step7() {
   return (
     <div className="onboarding-step-content">
       <div className="onboarding-diagram">
@@ -169,8 +330,8 @@ function Step4() {
   );
 }
 
-/** Step 5: Your First Channel */
-function Step5({
+/** Step 8: Your First Channel */
+function Step8({
   onCreateChannel,
   onImportChannel,
 }: {
@@ -208,7 +369,7 @@ function Step5({
 }
 
 /**
- * Onboarding modal with 5-step walkthrough.
+ * Onboarding modal with 8-step walkthrough.
  * Disabled in testing mode.
  */
 export function OnboardingModal({
@@ -216,6 +377,7 @@ export function OnboardingModal({
   onComplete,
   onCreateChannel,
   onImportChannel,
+  onBlueskyLogin,
 }: OnboardingModalProps) {
   const testingMode = useTestingMode();
   const [currentStep, setCurrentStep] = useState(1);
@@ -255,7 +417,7 @@ export function OnboardingModal({
   };
 
   const handleFamiliarSkip = () => {
-    setCurrentStep(5); // Jump to channel setup
+    setCurrentStep(8); // Jump to channel setup
   };
 
   return (
@@ -283,9 +445,12 @@ export function OnboardingModal({
           {currentStep === 1 && <Step1 />}
           {currentStep === 2 && <Step2 />}
           {currentStep === 3 && <Step3 />}
-          {currentStep === 4 && <Step4 />}
-          {currentStep === 5 && (
-            <Step5 onCreateChannel={onCreateChannel} onImportChannel={onImportChannel} />
+          {currentStep === 4 && <Step4 onBlueskyLogin={onBlueskyLogin} />}
+          {currentStep === 5 && <Step5 />}
+          {currentStep === 6 && <Step6 />}
+          {currentStep === 7 && <Step7 />}
+          {currentStep === 8 && (
+            <Step8 onCreateChannel={onCreateChannel} onImportChannel={onImportChannel} />
           )}
         </div>
 

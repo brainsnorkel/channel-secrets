@@ -379,3 +379,195 @@
 .onboarding-link:hover {
   color: var(--color-primary-dark, #0052a3);
 }
+
+/* Bluesky login (Step 4) */
+.onboarding-bluesky-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: var(--color-bg, white);
+  border-radius: 8px;
+}
+
+.onboarding-info-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.onboarding-info-text {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-text-secondary, #666);
+  line-height: 1.5;
+}
+
+.onboarding-bluesky-login-wrapper {
+  margin: 20px -24px;
+  padding: 20px 24px;
+  background: var(--color-bg, white);
+  border-top: 1px solid var(--color-border-light, #eee);
+  border-bottom: 1px solid var(--color-border-light, #eee);
+}
+
+/* Sender flow (Step 5) */
+.onboarding-sender-flow {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.onboarding-flow-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px;
+  background: var(--color-bg, white);
+  border-radius: 8px;
+}
+
+.onboarding-flow-number {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-primary, #0066cc);
+  color: white;
+  border-radius: 50%;
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.onboarding-flow-text {
+  flex: 1;
+}
+
+.onboarding-flow-text strong {
+  display: block;
+  color: var(--color-text, #333);
+  margin-bottom: 4px;
+}
+
+.onboarding-flow-text p {
+  margin: 0;
+  font-size: 12px;
+  color: var(--color-text-secondary, #666);
+}
+
+.onboarding-flow-arrow {
+  text-align: center;
+  font-size: 20px;
+  color: var(--color-text-tertiary, #999);
+  padding: 4px 0;
+}
+
+/* Interactive demo (Step 6) */
+.onboarding-demo-compose {
+  background: var(--color-bg, white);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 16px;
+}
+
+.onboarding-demo-textarea {
+  width: 100%;
+  min-height: 80px;
+  padding: 8px;
+  border: 1px solid var(--color-border, #ddd);
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: inherit;
+  resize: vertical;
+  margin-bottom: 8px;
+}
+
+.onboarding-demo-textarea:focus {
+  outline: none;
+  border-color: var(--color-primary, #0066cc);
+}
+
+.onboarding-demo-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.onboarding-demo-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--color-text-secondary, #666);
+  cursor: pointer;
+}
+
+.onboarding-demo-checkbox input[type="checkbox"] {
+  cursor: pointer;
+}
+
+.onboarding-demo-count {
+  font-size: 12px;
+  color: var(--color-text-tertiary, #999);
+  font-family: var(--font-mono, monospace);
+}
+
+.onboarding-demo-features {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.onboarding-demo-bit {
+  flex: 1;
+  padding: 10px;
+  background: var(--color-bg, white);
+  border: 2px solid var(--color-border, #ddd);
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.2s ease;
+}
+
+.onboarding-demo-bit.active {
+  border-color: var(--color-primary, #0066cc);
+  background: rgba(0, 102, 204, 0.05);
+}
+
+.onboarding-demo-bit-label {
+  font-size: 11px;
+  color: var(--color-text-secondary, #666);
+  text-align: center;
+}
+
+.onboarding-demo-bit-value {
+  font-size: 20px;
+  font-weight: 600;
+  font-family: var(--font-mono, monospace);
+  color: var(--color-text, #333);
+}
+
+.onboarding-demo-bit.active .onboarding-demo-bit-value {
+  color: var(--color-primary, #0066cc);
+}
+
+.onboarding-demo-result {
+  text-align: center;
+  padding: 10px;
+  background: var(--color-bg, white);
+  border-radius: 6px;
+  font-size: 14px;
+  color: var(--color-text, #333);
+}
+
+.onboarding-demo-result code {
+  font-family: var(--font-mono, monospace);
+  background: var(--color-bg-secondary, #f8f9fa);
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-left: 4px;
+  font-weight: 600;
+}

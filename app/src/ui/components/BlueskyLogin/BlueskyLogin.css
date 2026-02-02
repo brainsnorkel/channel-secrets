@@ -1,0 +1,356 @@
+.bluesky-login {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 24px;
+}
+
+.bluesky-login__container {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 48px 40px;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: slideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.bluesky-login__logo {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 24px;
+  color: #1185fe;
+}
+
+.bluesky-login__title {
+  font-size: 32px;
+  font-weight: 800;
+  text-align: center;
+  margin: 0 0 8px;
+  color: #0f1419;
+  letter-spacing: -0.02em;
+}
+
+.bluesky-login__subtitle {
+  font-size: 15px;
+  text-align: center;
+  color: #536471;
+  margin: 0 0 24px;
+}
+
+.bluesky-login__warning {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: #fff7e6;
+  border: 1px solid #ffe0b3;
+  border-radius: 8px;
+  color: #996600;
+  font-size: 13px;
+  margin-bottom: 24px;
+  line-height: 1.4;
+}
+
+.bluesky-login__warning svg {
+  flex-shrink: 0;
+}
+
+.bluesky-login__form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.bluesky-login__input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bluesky-login__label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #0f1419;
+}
+
+.bluesky-login__input-wrapper {
+  position: relative;
+}
+
+.bluesky-login__input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #e1e8ed;
+  border-radius: 8px;
+  font-size: 15px;
+  color: #0f1419;
+  transition: all 0.2s ease;
+  background: #ffffff;
+}
+
+.bluesky-login__input-wrapper .bluesky-login__input {
+  padding-right: 48px;
+}
+
+.bluesky-login__input:focus {
+  outline: none;
+  border-color: #1185fe;
+  box-shadow: 0 0 0 3px rgba(17, 133, 254, 0.1);
+}
+
+.bluesky-login__input:disabled {
+  background: #f7f9fa;
+  color: #8b98a5;
+  cursor: not-allowed;
+}
+
+.bluesky-login__toggle-visibility {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #536471;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease;
+}
+
+.bluesky-login__toggle-visibility:hover:not(:disabled) {
+  color: #0f1419;
+}
+
+.bluesky-login__toggle-visibility:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.bluesky-login__app-password-link {
+  font-size: 13px;
+  color: #1185fe;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.bluesky-login__app-password-link:hover {
+  color: #0d6ecd;
+  text-decoration: underline;
+}
+
+.bluesky-login__error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: #fef1f1;
+  border: 1px solid #fcd7d7;
+  border-radius: 8px;
+  color: #c7254e;
+  font-size: 14px;
+  animation: shake 0.4s ease;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-8px); }
+  75% { transform: translateX(8px); }
+}
+
+.bluesky-login__error svg {
+  flex-shrink: 0;
+}
+
+.bluesky-login__button-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.bluesky-login__submit {
+  background: linear-gradient(135deg, #1185fe 0%, #0d6ecd 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 14px 24px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.bluesky-login__submit:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(17, 133, 254, 0.4);
+}
+
+.bluesky-login__submit:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.bluesky-login__submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.bluesky-login__cancel {
+  background: transparent;
+  color: #536471;
+  border: 2px solid #e1e8ed;
+  border-radius: 8px;
+  padding: 12px 24px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.bluesky-login__cancel:hover:not(:disabled) {
+  background: #f7f9fa;
+  border-color: #cbd2d9;
+  color: #0f1419;
+}
+
+.bluesky-login__cancel:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.bluesky-login__spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.bluesky-login__footer {
+  text-align: center;
+  font-size: 13px;
+  color: #8b98a5;
+  margin: 24px 0 0;
+  line-height: 1.4;
+}
+
+@media (prefers-color-scheme: dark) {
+  .bluesky-login {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  }
+
+  .bluesky-login__container {
+    background: #16181c;
+  }
+
+  .bluesky-login__logo {
+    color: #1185fe;
+  }
+
+  .bluesky-login__title {
+    color: #e7e9ea;
+  }
+
+  .bluesky-login__subtitle {
+    color: #71767b;
+  }
+
+  .bluesky-login__warning {
+    background: #2d2416;
+    border-color: #4d3d1a;
+    color: #f4c542;
+  }
+
+  .bluesky-login__label {
+    color: #e7e9ea;
+  }
+
+  .bluesky-login__input {
+    background: #000000;
+    border-color: #2f3336;
+    color: #e7e9ea;
+  }
+
+  .bluesky-login__input:focus {
+    border-color: #1185fe;
+    box-shadow: 0 0 0 3px rgba(17, 133, 254, 0.15);
+  }
+
+  .bluesky-login__input:disabled {
+    background: #1e2124;
+    color: #71767b;
+  }
+
+  .bluesky-login__toggle-visibility {
+    color: #71767b;
+  }
+
+  .bluesky-login__toggle-visibility:hover:not(:disabled) {
+    color: #e7e9ea;
+  }
+
+  .bluesky-login__app-password-link {
+    color: #1d9bf0;
+  }
+
+  .bluesky-login__app-password-link:hover {
+    color: #4ab3f4;
+  }
+
+  .bluesky-login__error {
+    background: #2d1618;
+    border-color: #5c2025;
+    color: #f4a6ba;
+  }
+
+  .bluesky-login__cancel {
+    border-color: #2f3336;
+    color: #71767b;
+  }
+
+  .bluesky-login__cancel:hover:not(:disabled) {
+    background: #1e2124;
+    border-color: #3e4144;
+    color: #e7e9ea;
+  }
+
+  .bluesky-login__footer {
+    color: #71767b;
+  }
+}
+
+@media (max-width: 480px) {
+  .bluesky-login__container {
+    padding: 32px 24px;
+  }
+
+  .bluesky-login__title {
+    font-size: 28px;
+  }
+}
