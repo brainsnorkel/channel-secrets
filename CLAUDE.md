@@ -4,20 +4,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-StegoChannel is a **specification-only repository** defining a steganographic communication protocol. Messages are hidden not by modifying post content, but by selecting *which* naturally-written social media posts to publish based on a shared secret key.
-
-There is no reference implementation yet—this repository contains only markdown documentation.
+StegoChannel is a steganographic communication protocol. Messages are hidden not by modifying post content, but by selecting *which* naturally-written social media posts to publish based on a shared secret key.
 
 ## Repository Structure
 
 ```
-files/
-├── README.md          # Project overview and quick start
+docs/
 ├── SPEC.md            # Full protocol specification (canonical reference)
 ├── SECURITY.md        # Threat model and security analysis
 ├── SENDER_GUIDE.md    # How to transmit messages
 ├── RECEIVER_GUIDE.md  # How to receive messages
-└── WORKED_EXAMPLE.md  # End-to-end example with actual values
+├── SETUP_GUIDE.md     # Initial channel setup
+├── WORKED_EXAMPLE.md  # End-to-end example with actual values
+└── PAPER.md           # Technical paper
+
+app/                   # React/TypeScript reference implementation
+demo/                  # Interactive browser demo
 ```
 
 ## Key Protocol Concepts
