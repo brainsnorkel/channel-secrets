@@ -2,7 +2,7 @@
 // Reed-Solomon error correction for StegoChannel
 // Implements SPEC.md Section 8.4
 
-import * as rs from 'reedsolomon';
+import { GenericGF, ReedSolomonEncoder, ReedSolomonDecoder } from './reedsolomon-shim';
 
 /**
  * Reed-Solomon parameters (SPEC.md Section 8.4):
@@ -47,8 +47,8 @@ export function rsEncode(data: Uint8Array, eccSymbols: number = DEFAULT_ECC_SYMB
   }
 
   // Create encoder with QR_CODE_FIELD_256 (primitive polynomial 0x11d)
-  const field = rs.GenericGF.QR_CODE_FIELD_256();
-  const encoder = new rs.ReedSolomonEncoder(field);
+  const field = GenericGF.QR_CODE_FIELD_256();
+  const encoder = new ReedSolomonEncoder(field);
 
   // Copy data to Int32Array (required by reedsolomon library)
   // The library expects an array of size (data.length + eccSymbols)
@@ -107,8 +107,8 @@ export function rsDecode(encoded: Uint8Array, eccSymbols: number = DEFAULT_ECC_S
   }
 
   // Create decoder with QR_CODE_FIELD_256 (primitive polynomial 0x11d)
-  const field = rs.GenericGF.QR_CODE_FIELD_256();
-  const decoder = new rs.ReedSolomonDecoder(field);
+  const field = GenericGF.QR_CODE_FIELD_256();
+  const decoder = new ReedSolomonDecoder(field);
 
   // Copy encoded data to Int32Array
   const toDecode = new Int32Array(encoded.length);
