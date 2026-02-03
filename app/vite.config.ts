@@ -18,4 +18,8 @@ export default defineConfig({
     // Force pre-bundling of reedsolomon to handle its CommonJS exports properly
     include: ['reedsolomon'],
   },
+  server: {
+    // Allow Docker container to access dev server
+    allowedHosts: ['host.docker.internal'],
+  },
 })
