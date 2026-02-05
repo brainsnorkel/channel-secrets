@@ -8,7 +8,6 @@ import { isSignalPost } from './protocol/selection';
 import { decodeFrame, bitsToFrame } from './protocol/framing';
 import { extractFeatures, normalizeText, type FeatureId } from './protocol/features';
 import {
-  deriveEpochKeyForBeacon,
   type BeaconType,
   getEpochInfo,
   getBeaconHistory,
@@ -426,7 +425,7 @@ export class FeedMonitor {
     const processedPostIds = new Set<string>();
 
     // Try each epoch in order (most recent first)
-    for (const { epochKey, beaconValue } of epochKeys) {
+    for (const { epochKey } of epochKeys) {
       const result = await this.processEpoch(
         posts,
         epochKey,

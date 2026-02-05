@@ -96,7 +96,7 @@ export async function hmacSha256(
   );
 
   // Handle subarrays correctly by using byteOffset and byteLength
-  const messageBuffer = message.buffer.slice(message.byteOffset, message.byteOffset + message.byteLength);
+  const messageBuffer = message.buffer.slice(message.byteOffset, message.byteOffset + message.byteLength) as ArrayBuffer;
   const signature = await crypto.subtle.sign('HMAC', cryptoKey, messageBuffer);
   const fullHmac = new Uint8Array(signature);
 

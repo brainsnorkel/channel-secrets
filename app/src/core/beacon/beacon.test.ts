@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { formatDateBeacon, getBeaconHistory, clearBeaconHistory, getEpochInfo } from './index';
+import { formatDateBeacon, getBeaconHistory, clearBeaconHistory } from './index';
 
 // We need to test recordBeaconHistory indirectly through getBeaconHistory
 // since recordBeaconHistory is not exported
