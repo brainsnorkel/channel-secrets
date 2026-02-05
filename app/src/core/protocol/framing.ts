@@ -2,7 +2,7 @@
 // Message frame encoding/decoding for StegoChannel
 // Implements SPEC.md Section 8
 
-import { hmacSha256 } from '../crypto';
+import { hmacSha256, constantTimeEqual, sha256, concat, stringToBytes, xchachaPoly1305Encrypt, xchachaPoly1305Decrypt } from '../crypto';
 import { rsEncode, rsDecode } from './reed-solomon';
 
 /**
@@ -49,9 +49,8 @@ export function bitsToFrame(bits: number[]): Uint8Array {
 
 /**
  * Derive nonce for encryption (SPEC.md Section 8.2)
- * Will be implemented when encryption support is added
+ * nonce = SHA256(epoch_key || "nonce" || uint64_be(seq_num))[0:24]
  */
-/*
 async function deriveNonce(epochKey: Uint8Array, messageSeqNum: number): Promise<Uint8Array> {
   const seqBuffer = new Uint8Array(8);
   const view = new DataView(seqBuffer.buffer);
@@ -61,7 +60,6 @@ async function deriveNonce(epochKey: Uint8Array, messageSeqNum: number): Promise
   const hash = await sha256(input);
   return hash.subarray(0, 24); // XChaCha20 uses 24-byte nonce
 }
-*/
 
 /**
  * Compute HMAC-SHA256 auth tag (truncated to 64 bits)
@@ -84,7 +82,7 @@ export async function encodeFrame(
   payload: Uint8Array,
   epochKey: Uint8Array,
   encrypted: boolean = false,
-  _messageSeqNum: number = 0
+  messageSeqNum: number = 0
 ): Promise<Uint8Array> {
   if (epochKey.length !== 32) {
     throw new Error('Epoch key must be 32 bytes');
@@ -94,11 +92,9 @@ export async function encodeFrame(
 
   // If encrypted, encrypt the payload (SPEC.md Section 8.2)
   if (encrypted) {
-    // Note: XChaCha20-Poly1305 encryption would be implemented here
-    // For now, this is a placeholder for the encryption logic
-    // const nonce = await deriveNonce(epochKey, _messageSeqNum);
-    // processedPayload = xchacha20poly1305_encrypt(epochKey, nonce, payload);
-    throw new Error('Encryption not yet implemented');
+    const nonce = await deriveNonce(epochKey, messageSeqNum);
+    processedPayload = xchachaPoly1305Encrypt(epochKey, nonce, payload);
+    // processedPayload is now payload.length + 16 (Poly1305 auth tag)
   }
 
   // Build frame header
@@ -142,7 +138,7 @@ export async function encodeFrame(
 export async function decodeFrame(
   frameBytes: Uint8Array,
   epochKey: Uint8Array,
-  _messageSeqNum: number = 0
+  messageSeqNum: number = 0
 ): Promise<{
   version: number;
   flags: number;
@@ -221,7 +217,7 @@ export async function decodeFrame(
   const frameWithoutAuth = correctedFrame.subarray(0, 3 + lengthBytes);
   const expectedAuthTag = await computeAuthTag(epochKey, frameWithoutAuth);
 
-  const authValid = receivedAuthTag.every((byte, i) => byte === expectedAuthTag[i]);
+  const authValid = constantTimeEqual(receivedAuthTag, expectedAuthTag);
 
   if (!authValid) {
     return {
@@ -236,10 +232,12 @@ export async function decodeFrame(
   // Decrypt if needed
   let payload = encryptedPayload;
   if (encrypted) {
-    // Note: XChaCha20-Poly1305 decryption would be implemented here
-    // const nonce = await deriveNonce(epochKey, _messageSeqNum);
-    // payload = xchacha20poly1305_decrypt(epochKey, nonce, encryptedPayload);
-    throw new Error('Decryption not yet implemented');
+    try {
+      const nonce = await deriveNonce(epochKey, messageSeqNum);
+      payload = xchachaPoly1305Decrypt(epochKey, nonce, encryptedPayload);
+    } catch {
+      return { version, flags, payload: new Uint8Array(0), valid: false, encrypted };
+    }
   }
 
   return {

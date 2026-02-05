@@ -1,29 +1,34 @@
 // Module: state
-// Simple reactive state management
+// Domain-isolated reactive state management with security hardening
 
 import type { AppState, Channel, Message, TransmissionState, UIState } from '../schemas';
+import type { DomainState } from './domains';
+import { updateDomain } from './updates';
+import { assertUnlocked } from './guards';
+import { zeroSensitiveState } from './security';
+import { logTransition } from './logger';
+
+// Re-export domain types for external use
+export type { DomainState } from './domains';
 
 /**
- * Default initial state
+ * Default initial domain state
  */
-const defaultState: AppState = {
-  unlocked: false,
-  activeChannelId: null,
-  channels: {},
-  messages: {},
-  transmissionState: {},
-  ui: {
-    view: 'feed',
-    loading: false,
-    error: null,
-  },
+const defaultDomainState: DomainState = {
+  sender: { transmissions: {} },
+  receiver: { messages: {}, lastPollTime: {} },
+  channel: { channels: {}, activeChannelId: null },
+  security: { unlocked: false, _keyCache: new Map() },
+  ui: { view: 'feed', loading: false, error: null },
 };
 
 /**
- * Global application state
- * Simple reactive state using plain objects
+ * Global application state (domain-isolated)
  */
-let appState: AppState = JSON.parse(JSON.stringify(defaultState));
+let domainState: DomainState = {
+  ...defaultDomainState,
+  security: { unlocked: false, _keyCache: new Map() },
+};
 
 /**
  * Subscribers for state changes
@@ -49,254 +54,262 @@ export function subscribe(listener: Listener): () => void {
  * Notify all listeners of state change
  */
 function notify(): void {
-  listeners.forEach(listener => listener());
+  listeners.forEach((listener) => listener());
 }
 
 /**
- * Get the entire state (read-only)
+ * Apply a domain update with logging
+ */
+function applyUpdate<K extends keyof DomainState>(
+  domain: K,
+  action: string,
+  updater: (current: DomainState[K]) => DomainState[K]
+): void {
+  const prev = domainState;
+  domainState = updateDomain(domainState, domain, updater);
+  logTransition(domain, action, prev, domainState);
+  notify();
+}
+
+/**
+ * Get domain state (for hooks)
+ */
+export function getDomainState(): DomainState {
+  return domainState;
+}
+
+/**
+ * Get the entire state as AppState (read-only, backward compat)
  */
 export function getState(): Readonly<AppState> {
-  return appState;
+  return {
+    unlocked: domainState.security.unlocked,
+    activeChannelId: domainState.channel.activeChannelId,
+    channels: domainState.channel.channels as Record<string, Channel>,
+    messages: domainState.receiver.messages as Record<string, Message[]>,
+    transmissionState: domainState.sender.transmissions as Record<string, TransmissionState>,
+    ui: domainState.ui as UIState,
+  };
 }
 
 /**
  * Initialize state with default values
- * Call this on app startup
  */
 export function initState(): void {
-  appState = JSON.parse(JSON.stringify(defaultState));
+  domainState = {
+    ...defaultDomainState,
+    security: { unlocked: false, _keyCache: new Map() },
+  };
   notify();
 }
 
-/**
- * Get a channel by ID
- */
+// Channel operations (require unlocked for mutations)
+
 export function getChannel(id: string): Channel | undefined {
-  return appState.channels[id];
+  return domainState.channel.channels[id];
 }
 
-/**
- * Get all channels
- */
 export function getAllChannels(): Record<string, Channel> {
-  return appState.channels;
+  return domainState.channel.channels as Record<string, Channel>;
 }
 
-/**
- * Add or update a channel
- */
 export function setChannel(id: string, channel: Channel): void {
-  appState.channels[id] = channel;
-  notify();
+  assertUnlocked(domainState);
+  applyUpdate('channel', 'setChannel', (current) => ({
+    ...current,
+    channels: { ...current.channels, [id]: channel },
+  }));
 }
 
-/**
- * Delete a channel
- */
 export function deleteChannel(id: string): void {
-  delete appState.channels[id];
-  delete appState.messages[id];
-  delete appState.transmissionState[id];
+  assertUnlocked(domainState);
+  const { [id]: _removed, ...remainingChannels } = domainState.channel.channels;
+  const { [id]: _removedMsgs, ...remainingMessages } = domainState.receiver.messages;
+  const { [id]: _removedTx, ...remainingTx } = domainState.sender.transmissions;
+  const { [id]: _removedPoll, ...remainingPollTimes } = domainState.receiver.lastPollTime;
 
-  // Clear active channel if it was deleted
-  if (appState.activeChannelId === id) {
-    appState.activeChannelId = null;
-  }
-  notify();
+  applyUpdate('channel', 'deleteChannel', (current) => ({
+    ...current,
+    channels: remainingChannels,
+    activeChannelId: current.activeChannelId === id ? null : current.activeChannelId,
+  }));
+
+  // Also clean up other domains
+  applyUpdate('receiver', 'deleteChannel', () => ({
+    messages: remainingMessages,
+    lastPollTime: remainingPollTimes,
+  }));
+
+  applyUpdate('sender', 'deleteChannel', () => ({
+    transmissions: remainingTx,
+  }));
 }
 
-/**
- * Set the active channel
- */
 export function setActiveChannel(id: string | null): void {
-  appState.activeChannelId = id;
-  notify();
+  applyUpdate('channel', 'setActiveChannel', (current) => ({
+    ...current,
+    activeChannelId: id,
+  }));
 }
 
-/**
- * Get the active channel ID
- */
 export function getActiveChannelId(): string | null {
-  return appState.activeChannelId;
+  return domainState.channel.activeChannelId;
 }
 
-/**
- * Get the active channel object
- */
 export function getActiveChannel(): Channel | null {
-  const id = appState.activeChannelId;
+  const id = domainState.channel.activeChannelId;
   if (!id) return null;
   return getChannel(id) ?? null;
 }
 
-/**
- * Get messages for a channel
- */
+// Message operations
+
 export function getMessages(channelId: string): Message[] {
-  return appState.messages[channelId] ?? [];
+  return (domainState.receiver.messages[channelId] ?? []) as Message[];
 }
 
-/**
- * Add a message to a channel
- */
 export function addMessage(channelId: string, message: Message): void {
-  if (!appState.messages[channelId]) {
-    appState.messages[channelId] = [];
-  }
-  appState.messages[channelId].push(message);
-  notify();
+  assertUnlocked(domainState);
+  applyUpdate('receiver', 'addMessage', (current) => ({
+    ...current,
+    messages: {
+      ...current.messages,
+      [channelId]: [...(current.messages[channelId] ?? []), message],
+    },
+  }));
 }
 
-/**
- * Set all messages for a channel (replaces existing)
- */
 export function setMessages(channelId: string, messages: Message[]): void {
-  appState.messages[channelId] = messages;
-  notify();
+  applyUpdate('receiver', 'setMessages', (current) => ({
+    ...current,
+    messages: { ...current.messages, [channelId]: messages },
+  }));
 }
 
-/**
- * Get transmission state for a channel
- */
+// Transmission operations
+
 export function getTransmissionState(channelId: string): TransmissionState | undefined {
-  return appState.transmissionState[channelId];
+  return domainState.sender.transmissions[channelId] as TransmissionState | undefined;
 }
 
-/**
- * Set transmission state for a channel
- */
-export function setTransmissionState(channelId: string, transmissionState: TransmissionState): void {
-  appState.transmissionState[channelId] = transmissionState;
-  notify();
+export function setTransmissionState(
+  channelId: string,
+  transmissionState: TransmissionState
+): void {
+  assertUnlocked(domainState);
+  applyUpdate('sender', 'setTransmissionState', (current) => ({
+    ...current,
+    transmissions: { ...current.transmissions, [channelId]: transmissionState },
+  }));
 }
 
-/**
- * Update transmission state (partial update)
- */
 export function updateTransmissionState(
   channelId: string,
   updates: Partial<TransmissionState>
 ): void {
-  const current = appState.transmissionState[channelId];
-
+  const current = domainState.sender.transmissions[channelId];
   if (!current) {
     throw new Error(`No transmission state found for channel ${channelId}`);
   }
+  applyUpdate('sender', 'updateTransmissionState', (s) => ({
+    ...s,
+    transmissions: {
+      ...s.transmissions,
+      [channelId]: { ...current, ...updates } as TransmissionState,
+    },
+  }));
+}
 
-  appState.transmissionState[channelId] = {
+export function clearTransmissionState(channelId: string): void {
+  const { [channelId]: _removed, ...remaining } = domainState.sender.transmissions;
+  applyUpdate('sender', 'clearTransmissionState', () => ({
+    transmissions: remaining,
+  }));
+}
+
+// UI operations
+
+export function updateUI(updates: Partial<UIState>): void {
+  applyUpdate('ui', 'updateUI', (current) => ({
     ...current,
     ...updates,
-  };
-  notify();
+  }));
 }
 
-/**
- * Clear transmission state for a channel
- */
-export function clearTransmissionState(channelId: string): void {
-  delete appState.transmissionState[channelId];
-  notify();
-}
-
-/**
- * UI state helpers
- */
-
-/**
- * Update UI state (partial update)
- */
-export function updateUI(updates: Partial<UIState>): void {
-  appState.ui = {
-    ...appState.ui,
-    ...updates,
-  };
-  notify();
-}
-
-/**
- * Set current view
- */
 export function setView(view: UIState['view']): void {
-  appState.ui.view = view;
-  notify();
+  applyUpdate('ui', 'setView', (current) => ({ ...current, view }));
 }
 
-/**
- * Set loading state
- */
 export function setLoading(loading: boolean): void {
-  appState.ui.loading = loading;
-  notify();
+  applyUpdate('ui', 'setLoading', (current) => ({ ...current, loading }));
 }
 
-/**
- * Set error message
- */
 export function setError(error: string | null): void {
-  appState.ui.error = error;
-  notify();
+  applyUpdate('ui', 'setError', (current) => ({ ...current, error }));
 }
 
-/**
- * Clear error
- */
 export function clearError(): void {
-  appState.ui.error = null;
-  notify();
+  applyUpdate('ui', 'clearError', (current) => ({ ...current, error: null }));
 }
 
-/**
- * Get current UI state
- */
 export function getUI(): UIState {
-  return appState.ui;
+  return domainState.ui as UIState;
 }
 
-/**
- * Lock the application (clear unlocked state)
- */
+// Security operations
+
 export function lock(): void {
-  appState.unlocked = false;
-  appState.activeChannelId = null;
+  domainState = zeroSensitiveState(domainState);
   notify();
 }
 
-/**
- * Unlock the application
- */
 export function unlock(): void {
-  appState.unlocked = true;
-  notify();
+  applyUpdate('security', 'unlock', (current) => ({
+    ...current,
+    unlocked: true,
+  }));
 }
 
-/**
- * Check if application is unlocked
- */
 export function isUnlocked(): boolean {
-  return appState.unlocked;
+  return domainState.security.unlocked;
 }
 
-/**
- * Export the entire state (for persistence/debugging)
- */
+// Persistence operations (backward compat)
+
 export function exportState(): AppState {
-  return JSON.parse(JSON.stringify(appState));
+  return JSON.parse(JSON.stringify(getState()));
 }
 
-/**
- * Import state (restore from persistence)
- */
 export function importState(importedState: Partial<AppState>): void {
-  appState = {
-    ...appState,
-    ...importedState,
-  };
-  notify();
+  if (importedState.channels !== undefined) {
+    applyUpdate('channel', 'importState', (current) => ({
+      ...current,
+      channels: importedState.channels ?? current.channels,
+      activeChannelId: importedState.activeChannelId ?? current.activeChannelId,
+    }));
+  }
+  if (importedState.messages !== undefined) {
+    applyUpdate('receiver', 'importState', (current) => ({
+      ...current,
+      messages: importedState.messages ?? current.messages,
+    }));
+  }
+  if (importedState.transmissionState !== undefined) {
+    applyUpdate('sender', 'importState', (current) => ({
+      transmissions: importedState.transmissionState ?? current.transmissions,
+    }));
+  }
+  if (importedState.ui !== undefined) {
+    applyUpdate('ui', 'importState', () => importedState.ui!);
+  }
+  if (importedState.unlocked !== undefined) {
+    applyUpdate('security', 'importState', (current) => ({
+      ...current,
+      unlocked: importedState.unlocked!,
+    }));
+  }
 }
 
-/**
- * Reset state to defaults (useful for logout)
- */
 export function resetState(): void {
   initState();
 }

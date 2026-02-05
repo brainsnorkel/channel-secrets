@@ -1,7 +1,7 @@
 // Module: core/protocol/selection
 // Post selection algorithm for StegoChannel (SPEC.md Section 6)
 
-import { sha256, concat, stringToBytes } from '../crypto';
+import { sha256, concat, stringToBytes, constantTimeLessThan } from '../crypto';
 
 /**
  * Compute the selection hash for a post.
@@ -93,5 +93,5 @@ export async function isSignalPost(
   const selectionValue = getSelectionValue(selectionHash);
   const threshold = computeThreshold(rate);
 
-  return selectionValue < threshold;
+  return constantTimeLessThan(selectionValue, threshold);
 }

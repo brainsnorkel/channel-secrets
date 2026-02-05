@@ -35,6 +35,36 @@ interface BeaconCacheEntry {
 const beaconCache = new Map<BeaconType, BeaconCacheEntry>();
 
 /**
+ * Beacon history: stores historical beacon values for grace period lookups.
+ * SEPARATE from beaconCache (which is a rate-limiting single-value cache).
+ * Values accumulate on epoch transitions (when beacon value changes).
+ */
+const beaconHistory = new Map<BeaconType, string[]>();
+
+/**
+ * Record a beacon value in history if it's new (epoch transition).
+ * Called inside getBeaconValue() AFTER a fresh fetch (not cache hit).
+ */
+function recordBeaconHistory(beaconType: BeaconType, value: string): void {
+  if (!beaconHistory.has(beaconType)) beaconHistory.set(beaconType, []);
+  const history = beaconHistory.get(beaconType)!;
+
+  // Only add if different from most recent (epoch actually changed)
+  if (history.length === 0 || history[history.length - 1] !== value) {
+    history.push(value);
+    // Keep only last N+1 entries based on epochsToCheck
+    const info = getEpochInfo(beaconType);
+    const maxEntries = info.epochsToCheck + 1;
+    while (history.length > maxEntries) history.shift();
+  }
+}
+
+/** Get historical beacon values (most recent first) for grace period */
+export function getBeaconHistory(beaconType: BeaconType): string[] {
+  return [...(beaconHistory.get(beaconType) ?? [])].reverse();
+}
+
+/**
  * Get epoch information for a beacon type
  * Per SPEC Section 4.1
  *
@@ -155,18 +185,24 @@ export async function fetchNistBeacon(): Promise<string> {
 }
 
 /**
+ * Format a Date object as a beacon value (YYYY-MM-DD UTC).
+ * Used by grace period to compute previous date epochs.
+ */
+export function formatDateBeacon(date: Date): string {
+  const year = date.getUTCFullYear();
+  const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(date.getUTCDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+/**
  * Get current UTC date in ISO 8601 format
  * Per beacon-sync spec requirement
  *
  * @returns Current UTC date string (YYYY-MM-DD)
  */
 export function fetchDateBeacon(): string {
-  const now = new Date();
-  const year = now.getUTCFullYear();
-  const month = String(now.getUTCMonth() + 1).padStart(2, '0');
-  const day = String(now.getUTCDate()).padStart(2, '0');
-
-  return `${year}-${month}-${day}`;
+  return formatDateBeacon(new Date());
 }
 
 /**
@@ -209,6 +245,9 @@ export async function getBeaconValue(beaconType: BeaconType): Promise<string> {
       value = fetchDateBeacon();
       break;
   }
+
+  // Record in beacon history (for grace period lookups)
+  recordBeaconHistory(beaconType, value);
 
   // Update cache
   beaconCache.set(beaconType, {
@@ -268,6 +307,13 @@ export async function deriveEpochKeyForBeacon(
  */
 export function clearBeaconCache(): void {
   beaconCache.clear();
+}
+
+/**
+ * Clear beacon history (useful for testing)
+ */
+export function clearBeaconHistory(): void {
+  beaconHistory.clear();
 }
 
 /**

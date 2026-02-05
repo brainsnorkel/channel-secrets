@@ -95,7 +95,9 @@ export async function hmacSha256(
     ['sign']
   );
 
-  const signature = await crypto.subtle.sign('HMAC', cryptoKey, message.buffer as ArrayBuffer);
+  // Handle subarrays correctly by using byteOffset and byteLength
+  const messageBuffer = message.buffer.slice(message.byteOffset, message.byteOffset + message.byteLength);
+  const signature = await crypto.subtle.sign('HMAC', cryptoKey, messageBuffer);
   const fullHmac = new Uint8Array(signature);
 
   // Truncate to 64 bits (8 bytes) as per SPEC Section 8.1
@@ -122,12 +124,18 @@ export function xchachaPoly1305Encrypt(
     throw new Error('XChaCha20-Poly1305: nonce must be 24 bytes');
   }
 
+  // Ensure inputs are proper Uint8Arrays, not subarrays
+  // libsodium requires contiguous buffers
+  const plaintextCopy = new Uint8Array(plaintext);
+  const nonceCopy = new Uint8Array(nonce);
+  const keyCopy = new Uint8Array(key);
+
   return sodium.crypto_aead_xchacha20poly1305_ietf_encrypt(
-    plaintext,
+    plaintextCopy,
     null, // no additional data
     null, // no secret nonce
-    nonce,
-    key
+    nonceCopy,
+    keyCopy
   );
 }
 
@@ -152,12 +160,18 @@ export function xchachaPoly1305Decrypt(
     throw new Error('XChaCha20-Poly1305: nonce must be 24 bytes');
   }
 
+  // Ensure inputs are proper Uint8Arrays, not subarrays
+  // libsodium requires contiguous buffers
+  const ciphertextCopy = new Uint8Array(ciphertext);
+  const nonceCopy = new Uint8Array(nonce);
+  const keyCopy = new Uint8Array(key);
+
   const plaintext = sodium.crypto_aead_xchacha20poly1305_ietf_decrypt(
     null, // no secret nonce
-    ciphertext,
+    ciphertextCopy,
     null, // no additional data
-    nonce,
-    key
+    nonceCopy,
+    keyCopy
   );
 
   if (!plaintext) {
@@ -298,6 +312,39 @@ export function concat(...buffers: Uint8Array[]): Uint8Array {
     offset += buf.length;
   }
   return result;
+}
+
+/**
+ * Constant-time less-than comparison for uint64 BigInts.
+ * Uses bitwise arithmetic only — no branches, no ternary.
+ */
+export function constantTimeLessThan(a: bigint, b: bigint): boolean {
+  const aBytes = uint64ToBytesBE(a);
+  const bBytes = uint64ToBytesBE(b);
+
+  let result = 0;
+  let determined = 0;
+
+  for (let i = 0; i < 8; i++) {
+    const diff = aBytes[i] - bBytes[i];
+    const aLess = (diff >> 31) & 1;
+    const different = ((diff >> 31) | ((-diff) >> 31)) & 1;
+    const notDetermined = ~determined & 1;
+    result = result | (aLess & notDetermined);
+    determined = determined | (different & notDetermined);
+  }
+
+  return result === 1;
+}
+
+/**
+ * Constant-time byte array equality using libsodium's memcmp.
+ * Returns true if arrays are equal, false otherwise.
+ * Requires sodium to be initialized.
+ */
+export function constantTimeEqual(a: Uint8Array, b: Uint8Array): boolean {
+  if (a.length !== b.length) return false;
+  return sodium.memcmp(a, b);
 }
 
 // ============================================================================

@@ -7,8 +7,15 @@ import { RSSAdapter, type FeedItem } from '../adapters/rss';
 import { isSignalPost } from './protocol/selection';
 import { decodeFrame, bitsToFrame } from './protocol/framing';
 import { extractFeatures, normalizeText, type FeatureId } from './protocol/features';
-import { deriveEpochKeyForBeacon, type BeaconType } from './beacon';
-import { sha256, stringToBytes, bytesToHex } from './crypto';
+import {
+  deriveEpochKeyForBeacon,
+  type BeaconType,
+  getEpochInfo,
+  getBeaconHistory,
+  getBeaconValue,
+  formatDateBeacon,
+} from './beacon';
+import { sha256, stringToBytes, bytesToHex, deriveEpochKey } from './crypto';
 
 // ============================================================================
 // Types
@@ -75,6 +82,48 @@ export interface DecodedMessage {
   bitCount: number;
   /** Timestamp of decode */
   decodedAt: Date;
+}
+
+// ============================================================================
+// Grace Period Helpers
+// ============================================================================
+
+/**
+ * Derive epoch keys for current and previous epochs (grace period).
+ * Date beacon: deterministically computes previous dates.
+ * BTC/NIST: uses accumulated beacon history from epoch transitions.
+ */
+async function deriveEpochKeysForGracePeriod(
+  channelKey: Uint8Array,
+  beaconType: BeaconType
+): Promise<{ epochKey: Uint8Array; beaconValue: string }[]> {
+  const epochInfo = getEpochInfo(beaconType);
+  const results: { epochKey: Uint8Array; beaconValue: string }[] = [];
+
+  if (beaconType === 'date') {
+    const now = new Date();
+    for (let i = 0; i <= epochInfo.epochsToCheck; i++) {
+      const date = new Date(now);
+      date.setUTCDate(date.getUTCDate() - i);
+      const beaconValue = formatDateBeacon(date);
+      const epochKey = await deriveEpochKey(channelKey, beaconType, beaconValue);
+      results.push({ epochKey, beaconValue });
+    }
+  } else {
+    const history = getBeaconHistory(beaconType);
+    if (history.length === 0) {
+      const beaconValue = await getBeaconValue(beaconType);
+      const epochKey = await deriveEpochKey(channelKey, beaconType, beaconValue);
+      results.push({ epochKey, beaconValue });
+    } else {
+      for (const beaconValue of history) {
+        const epochKey = await deriveEpochKey(channelKey, beaconType, beaconValue);
+        results.push({ epochKey, beaconValue });
+      }
+    }
+  }
+
+  return results;
 }
 
 // ============================================================================
@@ -364,29 +413,32 @@ export class FeedMonitor {
     channel: ChannelConfig,
     messageSeqNum: number = 0
   ): Promise<DecodedMessage | null> {
-    // Derive epoch key for current epoch
-    const currentEpochKey = await deriveEpochKeyForBeacon(
+    // Derive epoch keys for current and previous epochs (grace period)
+    const epochKeys = await deriveEpochKeysForGracePeriod(
       channel.channelKey,
       channel.beaconType
     );
 
-    // Fetch posts from all sources
+    // Fetch posts from all sources (once)
     const posts = await this.fetchPosts(channel.theirSources);
 
-    // Try current epoch
-    const currentResult = await this.processEpoch(
-      posts,
-      currentEpochKey,
-      channel,
-      messageSeqNum
-    );
+    // Track processed post IDs for deduplication across epochs
+    const processedPostIds = new Set<string>();
 
-    if (currentResult) {
-      return currentResult;
+    // Try each epoch in order (most recent first)
+    for (const { epochKey, beaconValue } of epochKeys) {
+      const result = await this.processEpoch(
+        posts,
+        epochKey,
+        channel,
+        messageSeqNum,
+        processedPostIds
+      );
+
+      if (result) {
+        return result;
+      }
     }
-
-    // TODO: Implement epoch grace period (check previous epochs)
-    // For now, only checking current epoch
 
     return null;
   }
@@ -398,7 +450,8 @@ export class FeedMonitor {
     posts: UnifiedPost[],
     epochKey: Uint8Array,
     channel: ChannelConfig,
-    messageSeqNum: number
+    messageSeqNum: number,
+    processedPostIds?: Set<string>
   ): Promise<DecodedMessage | null> {
     // Detect signal posts
     const signalPosts = await this.detectSignalPosts(
@@ -407,9 +460,20 @@ export class FeedMonitor {
       channel.selectionRate
     );
 
+    // Filter out already-processed posts (for grace period deduplication)
+    const newSignalPosts = processedPostIds
+      ? signalPosts.filter((post) => {
+          if (processedPostIds.has(post.id)) {
+            return false;
+          }
+          processedPostIds.add(post.id);
+          return true;
+        })
+      : signalPosts;
+
     // Extract bits with deduplication
     const bits = await this.extractBits(
-      signalPosts,
+      newSignalPosts,
       channel.featureSet,
       channel.lengthThreshold
     );
