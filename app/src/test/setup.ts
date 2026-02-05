@@ -1,8 +1,13 @@
 // Vitest test setup
 // This file is loaded before each test file
 
+import 'fake-indexeddb/auto';
 import '@testing-library/react';
-import { afterEach } from 'vitest';
+import { beforeAll, afterEach } from 'vitest';
+import { initSodium } from '../core/crypto';
+import { resetState } from '../state';
+import { clearBeaconCache, clearBeaconHistory } from '../core/beacon';
+import { clearAllSeqNums } from '../core/protocol/seqnum';
 
 // Mock localStorage for jsdom environment
 const localStorageMock = (() => {
@@ -30,7 +35,19 @@ Object.defineProperty(globalThis, 'localStorage', {
   writable: true,
 });
 
+// Export test configuration constants
+export const TEST_ARGON2ID_PARAMS = { opsLimit: 1, memLimit: 8192 };
+
+// Initialize libsodium before all tests
+beforeAll(async () => {
+  await initSodium();
+});
+
 // Clean up after each test
 afterEach(() => {
   localStorageMock.clear();
+  resetState();
+  clearBeaconCache();
+  clearBeaconHistory();
+  clearAllSeqNums();
 });

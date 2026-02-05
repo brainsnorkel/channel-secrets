@@ -3,6 +3,7 @@
 
 import { AtpAgent } from '@atproto/api';
 import type { AtpSessionData, AtpPersistSessionHandler } from '@atproto/api';
+import type { IPostAdapter } from '../interfaces';
 
 // ============================================================================
 // Types
@@ -66,7 +67,7 @@ export interface AuthorFeedResponse {
  * Provides authentication, post fetching, and post creation functionality
  * for the StegoChannel protocol.
  */
-export class BlueskyAdapter {
+export class BlueskyAdapter implements IPostAdapter {
   private agent: AtpAgent;
   private sessionData: AtpSessionData | null = null;
 
@@ -285,6 +286,17 @@ export class BlueskyAdapter {
       throw new Error(`Invalid AT URI format: ${atUri}`);
     }
     return match[1];
+  }
+
+  /**
+   * Instance method for IPostAdapter interface compliance.
+   * Delegates to static extractPostId for backward compatibility.
+   *
+   * @param uri - AT URI string
+   * @returns Post ID/rkey
+   */
+  extractPostId(uri: string): string {
+    return BlueskyAdapter.extractPostId(uri);
   }
 
   /**

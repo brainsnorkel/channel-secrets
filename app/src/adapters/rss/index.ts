@@ -2,6 +2,7 @@
 // RSS/Atom feed adapter
 
 import { sha256, stringToBytes, bytesToHex } from '../../core/crypto';
+import type { IFeedAdapter } from '../interfaces';
 
 /**
  * Represents a parsed feed item from RSS or Atom
@@ -56,7 +57,7 @@ export type FeedType = 'rss2' | 'atom' | 'unknown';
  * RSS/Atom feed adapter for StegoChannel
  * Implements feed fetching, parsing, and feature extraction
  */
-export class RSSAdapter {
+export class RSSAdapter implements IFeedAdapter {
   private parser: DOMParser;
 
   constructor() {
