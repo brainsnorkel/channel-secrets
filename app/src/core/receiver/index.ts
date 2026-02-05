@@ -10,7 +10,6 @@ import { extractBits as extractBitsFn } from './bit-extractor';
 import {
   tryDecodeMessage as tryDecodeMessageFn,
   processChannel as processChannelFn,
-  deriveEpochKeysForGracePeriod,
 } from './frame-decoder';
 import { PollManager } from './poll-manager';
 import type { UnifiedPost, ChannelConfig, Source, DecodedMessage } from './types';

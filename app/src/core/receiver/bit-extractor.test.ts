@@ -1,7 +1,6 @@
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { extractBits } from './bit-extractor';
 import { extractFeatures, type FeatureId } from '../protocol/features';
-import { createDeterministicEpochKey } from '../../test/fixtures';
 import type { UnifiedPost } from './types';
 
 describe('bit-extractor', () => {

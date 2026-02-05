@@ -33,7 +33,7 @@ export class MockBlueskyAdapter implements IPostAdapter {
   }
 
   async getAuthorFeed(
-    handle: string,
+    _handle: string,
     options?: { limit?: number; cursor?: string }
   ): Promise<{
     posts: Array<{
@@ -54,8 +54,8 @@ export class MockBlueskyAdapter implements IPostAdapter {
   }
 
   async createPost(
-    text: string,
-    options?: {
+    _text: string,
+    _options?: {
       images?: Array<{ data: Uint8Array; mimeType: string; alt?: string }>;
     }
   ): Promise<string> {
@@ -99,8 +99,8 @@ export class MockRSSAdapter implements IFeedAdapter {
   }
 
   async fetchFeed(
-    url: string,
-    options?: { etag?: string; lastModified?: string; proxyUrl?: string }
+    _url: string,
+    _options?: { etag?: string; lastModified?: string; proxyUrl?: string }
   ): Promise<{
     items: Array<{
       id: string;

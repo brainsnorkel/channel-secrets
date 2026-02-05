@@ -2,7 +2,7 @@
 // Verifies the public API surface
 
 import { describe, it, expect, vi } from 'vitest';
-import { createMockStorage, createDeterministicEpochKey } from '../../test/fixtures';
+import { createMockStorage } from '../../test/fixtures';
 import type { ChannelConfig } from './types';
 
 // Mock beacon module

@@ -233,6 +233,5 @@ describe('frame-decoder', () => {
 
     expect(result).not.toBeNull();
     expect(result!.payload).toHaveLength(0);
-    expect(result!.valid).toBeUndefined(); // DecodedMessage doesn't have valid field
   });
 });

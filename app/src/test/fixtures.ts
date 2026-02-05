@@ -52,14 +52,14 @@ export function createMockPost(
  * @returns Signal post
  * @throws Error if signal post cannot be found after 10000 attempts
  */
-export function createSignalPost(
+export async function createSignalPost(
   epochKey: Uint8Array,
   rate: number = 0.25,
   overrides?: Partial<MockUnifiedPost>
-): MockUnifiedPost {
+): Promise<MockUnifiedPost> {
   for (let i = 0; i < 10000; i++) {
     const id = `signal-${i.toString(36)}`;
-    if (isSignalPost(epochKey, id, rate)) {
+    if (await isSignalPost(epochKey, id, rate)) {
       return createMockPost({ id, ...overrides });
     }
   }
@@ -75,14 +75,14 @@ export function createSignalPost(
  * @returns Cover post
  * @throws Error if cover post cannot be found after 10000 attempts
  */
-export function createCoverPost(
+export async function createCoverPost(
   epochKey: Uint8Array,
   rate: number = 0.25,
   overrides?: Partial<MockUnifiedPost>
-): MockUnifiedPost {
+): Promise<MockUnifiedPost> {
   for (let i = 0; i < 10000; i++) {
     const id = `cover-${i.toString(36)}`;
-    if (!isSignalPost(epochKey, id, rate)) {
+    if (!(await isSignalPost(epochKey, id, rate))) {
       return createMockPost({ id, ...overrides });
     }
   }
@@ -164,6 +164,31 @@ export function createMockStorage() {
     async listChannels(): Promise<any[]> {
       const channels = JSON.parse(store.get('channels') || '{}');
       return Object.values(channels);
+    },
+    async saveMessage(_channelId: string, _message: any): Promise<void> {
+      // Mock implementation - not used in these tests
+    },
+    async getMessages(_channelId: string, _limit?: number, _offset?: number): Promise<any[]> {
+      return [];
+    },
+    async saveCredential(id: string, credential: unknown): Promise<void> {
+      store.set(`credential:${id}`, JSON.stringify(credential));
+    },
+    async getCredential<T>(id: string): Promise<T | null> {
+      const val = store.get(`credential:${id}`);
+      return val ? (JSON.parse(val) as T) : null;
+    },
+    async deleteCredential(id: string): Promise<void> {
+      store.delete(`credential:${id}`);
+    },
+    lock(): void {
+      // Mock implementation
+    },
+    isUnlocked(): boolean {
+      return true;
+    },
+    async close(): Promise<void> {
+      store.clear();
     },
     // For direct store access in tests
     _store: store,

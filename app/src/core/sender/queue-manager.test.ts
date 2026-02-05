@@ -2,7 +2,7 @@
 // Verifies message queuing, cancellation, and transmission lifecycle
 
 import { describe, it, expect, vi } from 'vitest';
-import { createMockStorage, createDeterministicEpochKey } from '../../test/fixtures';
+import { createMockStorage } from '../../test/fixtures';
 import type { TransmissionState, ChannelConfig } from './types';
 
 // Mock beacon module for startNextTransmission (which calls getEpochKey -> beacon)
