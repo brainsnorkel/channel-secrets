@@ -2,6 +2,7 @@
 // Post checking and confirmation logic for StegoChannel (SPEC.md Section 9.1)
 
 import { computeSelectionHash, getSelectionValue, computeThreshold } from '../protocol/selection';
+import { constantTimeLessThan } from '../crypto';
 import { extractFeatures } from '../protocol/features';
 import type { ChannelConfig, TransmissionState, PostFeatures, PostCheckResult, ConfirmPostResult } from './types';
 
@@ -127,7 +128,8 @@ export async function confirmPost(
   const threshold = computeThreshold(channelConfig.selectionRate!);
   const selectionHash = await computeSelectionHash(epochKey, postId);
   const selectionValue = getSelectionValue(selectionHash);
-  const wasSignal = selectionValue < threshold;
+  // Use constant-time comparison to prevent timing side-channel leaks
+  const wasSignal = constantTimeLessThan(selectionValue, threshold);
 
   if (!wasSignal) {
     return {

@@ -21,16 +21,12 @@ export async function detectSignalPosts(
   epochKey: Uint8Array,
   rate: number = 0.25
 ): Promise<UnifiedPost[]> {
-  const signalPosts: UnifiedPost[] = [];
-
-  await Promise.all(
-    posts.map(async (post) => {
-      const isSignal = await isSignalPost(epochKey, post.id, rate);
-      if (isSignal) {
-        signalPosts.push(post);
-      }
-    })
+  const results = await Promise.all(
+    posts.map(async (post) => ({
+      post,
+      isSignal: await isSignalPost(epochKey, post.id, rate),
+    }))
   );
 
-  return signalPosts;
+  return results.filter((r) => r.isSignal).map((r) => r.post);
 }

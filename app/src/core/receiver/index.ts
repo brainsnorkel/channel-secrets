@@ -147,13 +147,14 @@ export class FeedMonitor {
   // Polling
   // ==========================================================================
 
-  /**
-   * Start automatic polling for a channel
-   *
-   * @param channelId - Unique channel identifier
-   * @param channel - Channel configuration
-   * @param onMessage - Callback when message is decoded
-   */
+  getReceiverSeqNum(channelId: string): number {
+    return this.pollManager.getSeqNum(channelId);
+  }
+
+  setReceiverSeqNum(channelId: string, seqNum: number): void {
+    this.pollManager.setSeqNum(channelId, seqNum);
+  }
+
   startPolling(
     channelId: string,
     channel: ChannelConfig,
@@ -162,18 +163,10 @@ export class FeedMonitor {
     this.pollManager.startPolling(channelId, channel, this.adapters, onMessage);
   }
 
-  /**
-   * Stop polling for a channel
-   *
-   * @param channelId - Channel identifier
-   */
   stopPolling(channelId: string): void {
     this.pollManager.stopPolling(channelId);
   }
 
-  /**
-   * Stop all polling
-   */
   stopAllPolling(): void {
     this.pollManager.stopAllPolling();
   }

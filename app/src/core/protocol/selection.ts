@@ -56,12 +56,17 @@ export function computeThreshold(rate: number = 0.25): bigint {
     throw new Error('Selection rate must be between 0 and 1');
   }
 
-  // 2^64 = 18446744073709551616
+  // threshold = floor(rate * (2^64 - 1))
+  // Using pure bigint arithmetic to avoid IEEE 754 precision loss.
+  // Number(0xFFFFFFFFFFFFFFFFn) rounds to 2^64, losing the -1 and
+  // overflowing uint64 range for rates near 1.0.
   const maxUint64 = 0xFFFFFFFFFFFFFFFFn;
 
-  // threshold = floor(rate * (2^64 - 1))
-  // Using (2^64 - 1) to match SPEC.md formula exactly
-  const threshold = BigInt(Math.floor(Number(maxUint64) * rate));
+  // Convert rate to integer fraction with 9 digits of precision.
+  // e.g. rate=0.25 → numerator=250000000, denominator=1000000000
+  const precision = 1_000_000_000n;
+  const numerator = BigInt(Math.round(rate * Number(precision)));
+  const threshold = (maxUint64 * numerator) / precision;
 
   return threshold;
 }

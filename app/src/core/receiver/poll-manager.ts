@@ -5,40 +5,37 @@ import type { FeedAdapters } from './feed-fetcher';
 import { processChannel } from './frame-decoder';
 import type { ChannelConfig, DecodedMessage } from './types';
 
-/**
- * Manages polling timers for channel monitoring.
- * Each channel gets its own interval timer identified by channelId.
- */
 export class PollManager {
   private pollTimers: Map<string, ReturnType<typeof setInterval>> = new Map();
+  private seqNums: Map<string, number> = new Map();
   private pollIntervalMs: number;
 
   constructor(pollIntervalMs: number = 5 * 60 * 1000) {
     this.pollIntervalMs = pollIntervalMs;
   }
 
-  /**
-   * Start automatic polling for a channel.
-   *
-   * @param channelId - Unique channel identifier
-   * @param channel - Channel configuration
-   * @param adapters - Platform adapters for fetching
-   * @param onMessage - Callback when message is decoded
-   */
+  getSeqNum(channelId: string): number {
+    return this.seqNums.get(channelId) ?? 0;
+  }
+
+  setSeqNum(channelId: string, seqNum: number): void {
+    this.seqNums.set(channelId, seqNum);
+  }
+
   startPolling(
     channelId: string,
     channel: ChannelConfig,
     adapters: FeedAdapters,
     onMessage: (message: DecodedMessage) => void
   ): void {
-    // Clear existing timer
     this.stopPolling(channelId);
 
-    // Poll function
     const poll = async () => {
       try {
-        const message = await processChannel(channel, adapters);
+        const seqNum = this.getSeqNum(channelId);
+        const message = await processChannel(channel, adapters, seqNum);
         if (message) {
+          this.seqNums.set(channelId, seqNum + 1);
           onMessage(message);
         }
       } catch (error) {
@@ -46,10 +43,8 @@ export class PollManager {
       }
     };
 
-    // Initial poll
     poll();
 
-    // Set up interval
     const timer = setInterval(poll, this.pollIntervalMs);
     this.pollTimers.set(channelId, timer);
   }
