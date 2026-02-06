@@ -282,13 +282,13 @@ describe('Crypto Module', () => {
     describe('validateChannelKeyFormat', () => {
       it('should validate correct channel key format', () => {
         const keyString =
-          'stegochannel:v0:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA:date:0.25:len,media,punct';
+          'stegochannel:v0:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA:date:0.25:len,media,qmark';
         const result = validateChannelKeyFormat(keyString);
 
         expect(result.valid).toBe(true);
         expect(result.parsed?.beacon).toBe('date');
         expect(result.parsed?.rate).toBe(0.25);
-        expect(result.parsed?.features).toBe('len,media,punct');
+        expect(result.parsed?.features).toBe('len,media,qmark');
       });
 
       it('should reject wrong part count', () => {
@@ -339,10 +339,10 @@ describe('Crypto Module', () => {
 
       it('should validate multiple features', () => {
         const result = validateChannelKeyFormat(
-          'stegochannel:v0:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA:btc:0.5:len,media,punct,emoji'
+          'stegochannel:v0:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA:btc:0.5:len,media,qmark,fword'
         );
         expect(result.valid).toBe(true);
-        expect(result.parsed?.features).toBe('len,media,punct,emoji');
+        expect(result.parsed?.features).toBe('len,media,qmark,fword');
       });
     });
   });

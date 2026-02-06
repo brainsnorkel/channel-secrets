@@ -2,10 +2,15 @@
 // Queue and transmission lifecycle for StegoChannel sender pipeline (SPEC.md Section 9.1)
 
 import type { StorageInterface } from '../../storage';
-import type { QueuedMessage, TransmissionState, ChannelConfig } from './types';
+import type { QueuedMessage, TransmissionState, ChannelConfig, CurrentTransmission } from './types';
 import { buildMessageFrame } from './message-builder';
 import { getEpochKey } from './epoch-manager';
 import { persistState } from './state-persistence';
+
+function zeroTransmissionSecrets(tx: CurrentTransmission): void {
+  tx.epochKey.fill(0);
+  tx.encodedFrame.fill(0);
+}
 
 /**
  * Queue a message for transmission.
@@ -60,13 +65,15 @@ export async function cancelTransmission(
     return;
   }
 
-  // Move current message back to front of queue
   const transmission = state.currentTransmission;
+
+  // Move current message back to front of queue
   const message = state.messageQueue.find(m => m.id === transmission.messageId);
   if (message) {
     state.messageQueue.unshift(message);
   }
 
+  zeroTransmissionSecrets(transmission);
   state.currentTransmission = null;
   await persistState(storage, state);
 }
@@ -137,7 +144,7 @@ export async function completeTransmission(
     return;
   }
 
-  // Clear current transmission
+  zeroTransmissionSecrets(state.currentTransmission);
   state.currentTransmission = null;
   await persistState(storage, state);
 

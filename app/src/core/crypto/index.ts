@@ -48,13 +48,17 @@ export async function hkdfExpand(
 
     const key = await crypto.subtle.importKey(
       'raw',
-      prk.buffer as ArrayBuffer,
+      prk.buffer.slice(prk.byteOffset, prk.byteOffset + prk.byteLength) as ArrayBuffer,
       { name: 'HMAC', hash: 'SHA-256' },
       false,
       ['sign']
     );
 
-    const signature = await crypto.subtle.sign('HMAC', key, hmacInput.buffer as ArrayBuffer);
+    const signature = await crypto.subtle.sign(
+      'HMAC',
+      key,
+      hmacInput.buffer.slice(hmacInput.byteOffset, hmacInput.byteOffset + hmacInput.byteLength) as ArrayBuffer
+    );
     previous = new Uint8Array(signature);
 
     const copyLen = Math.min(hashLen, length - offset);
@@ -72,7 +76,10 @@ export async function hkdfExpand(
  * @returns SHA-256 hash (32 bytes)
  */
 export async function sha256(data: Uint8Array): Promise<Uint8Array> {
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data.buffer as ArrayBuffer);
+  const hashBuffer = await crypto.subtle.digest(
+    'SHA-256',
+    data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength) as ArrayBuffer
+  );
   return new Uint8Array(hashBuffer);
 }
 
@@ -89,7 +96,7 @@ export async function hmacSha256(
 ): Promise<Uint8Array> {
   const cryptoKey = await crypto.subtle.importKey(
     'raw',
-    key.buffer as ArrayBuffer,
+    key.buffer.slice(key.byteOffset, key.byteOffset + key.byteLength) as ArrayBuffer,
     { name: 'HMAC', hash: 'SHA-256' },
     false,
     ['sign']
@@ -657,7 +664,7 @@ export function validateChannelKeyFormat(keyString: string): {
 
   // Validate features (comma-separated list)
   const featureList = features.split(',');
-  const validFeatures = ['len', 'media', 'punct', 'time', 'emoji'];
+  const validFeatures = ['len', 'media', 'qmark', 'fword', 'wcount'];
   for (const feature of featureList) {
     if (!validFeatures.includes(feature)) {
       return {
