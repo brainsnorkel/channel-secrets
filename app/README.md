@@ -204,6 +204,279 @@ Generates optimized production build to `dist/`. Uses Vite with TypeScript and R
 4. **Build and verify** - `npm run build` produces production bundle
 5. **Type check** - TypeScript configuration enforces strict type safety
 
+## SPEC Cross-Reference
+
+This table maps sections of the protocol specification to their implementations in the codebase.
+
+| SPEC Section | Title | Implementation File(s) | Key Functions |
+|---|---|---|---|
+| 3 | Cryptographic Primitives | `src/core/crypto/index.ts` | `hkdfExpand`, `sha256`, `hmacSha256`, `xchachaPoly1305Encrypt`, `xchachaPoly1305Decrypt` |
+| 4 | Public Beacon Sources | `src/core/beacon/index.ts` | `fetchBitcoinBeacon`, `fetchNistBeacon`, `fetchDateBeacon`, `getBeaconValue`, `deriveEpochKeyForBeacon` |
+| 5 | Key Derivation | `src/core/crypto/index.ts` | `deriveEpochKey`, `deriveChannelKeyFromPassphrase`, `hkdfExpand` |
+| 6 | Post Selection | `src/core/protocol/selection.ts` | `computeSelectionHash`, `getSelectionValue`, `computeThreshold`, `isSignalPost` |
+| 7 | Feature Extraction | `src/core/protocol/features.ts` | `normalizeText`, `countGraphemes`, `extractLengthBit`, `extractMediaBit`, `extractQuestionBit`, `extractFirstWordBits`, `extractFeatures` |
+| 8 | Message Encoding | `src/core/protocol/framing.ts`, `src/core/protocol/reed-solomon.ts` | `encodeFrame`, `decodeFrame`, `frameToBits`, `bitsToFrame`, `rsEncode`, `rsDecode` |
+| 9 | Transmission Protocol | `src/core/sender/index.ts`, `src/core/receiver/index.ts` | Sender: `MessageTransmitter.queueMessage`, `checkPost`, `confirmPost`; Receiver: `FeedMonitor.fetchPosts`, `detectSignalPosts`, `extractBits`, `tryDecodeMessage` |
+| 10 | Channel Establishment | `src/core/crypto/index.ts` | `validateChannelKeyFormat`, `deriveChannelKeyFromPassphrase`, `generateRandomPassphrase` |
+
+## Public API
+
+### Core Modules
+
+#### `core/beacon` — Epoch Key Derivation and Beacon Fetching
+
+- `getBeaconValue(beaconType)` — Fetch current beacon value with caching
+- `deriveEpochKeyForBeacon(channelKey, beaconType)` — Derive epoch key from channel key and beacon
+- `getBeaconHistory(beaconType)` — Get historical beacon values for grace period lookups
+- `getEpochInfo(beaconType)` — Get epoch duration and grace period configuration
+- `fetchBitcoinBeacon()` — Fetch latest Bitcoin block hash
+- `fetchNistBeacon()` — Fetch NIST Randomness Beacon value
+- `fetchDateBeacon()` — Get current UTC date as beacon value
+- `getBeaconStatus(beaconType)` — Get beacon status (live/cached/failed) for UI display
+- `clearBeaconCache()` — Clear beacon cache for testing
+
+#### `core/crypto` — Cryptographic Primitives
+
+**Key Derivation:**
+- `deriveEpochKey(channelKey, beaconId, beaconValue)` — HKDF-Expand epoch key derivation (SPEC Section 5.1)
+- `deriveChannelKeyFromPassphrase(passphrase, myHandle, theirHandle, options)` — Argon2id-based channel key derivation
+- `generateRandomPassphrase(wordCount)` — Generate random passphrase from EFF wordlist
+- `estimatePassphraseStrength(passphrase)` — Estimate passphrase strength with feedback
+- `validateChannelKeyFormat(keyString)` — Validate channel key URI format
+
+**Cryptographic Primitives:**
+- `hkdfExpand(prk, info, length)` — HKDF-Expand using SHA-256 (RFC 5869)
+- `sha256(data)` — SHA-256 hash
+- `hmacSha256(key, message)` — HMAC-SHA256 truncated to 64 bits
+- `xchachaPoly1305Encrypt(key, nonce, plaintext)` — XChaCha20-Poly1305 encryption
+- `xchachaPoly1305Decrypt(key, nonce, ciphertext)` — XChaCha20-Poly1305 decryption
+- `argon2id(password, salt, opsLimit, memLimit)` — Argon2id password hashing
+- `constantTimeEqual(a, b)` — Constant-time byte array equality
+- `constantTimeLessThan(a, b)` — Constant-time uint64 less-than comparison
+
+**Byte Conversion:**
+- `bytesToUint64BE(bytes)` — Convert big-endian bytes to uint64
+- `uint64ToBytesBE(value)` — Convert uint64 to big-endian bytes
+- `hexToBytes(hex)` — Convert hex string to bytes
+- `bytesToHex(bytes)` — Convert bytes to hex string
+- `stringToBytes(str)` — Convert string to UTF-8 bytes
+- `concat(...buffers)` — Concatenate byte arrays
+
+#### `core/protocol` — Protocol Frame Encoding/Decoding and Feature Extraction
+
+**Post Selection (SPEC Section 6):**
+- `computeSelectionHash(epochKey, postId)` — Compute SHA-256 selection hash
+- `getSelectionValue(epochKey, postId)` — Get uint64 selection value for post
+- `computeThreshold(selectionRate)` — Compute selection threshold from rate
+- `isSignalPost(epochKey, postId, rate)` — Determine if post is signal post
+
+**Feature Extraction (SPEC Section 7):**
+- `normalizeText(text)` — Normalize text (NFC, whitespace, trim)
+- `countGraphemes(text)` — Count Unicode grapheme clusters
+- `extractLengthBit(text, threshold)` — Extract length feature (1 bit)
+- `extractMediaBit(post)` — Extract media presence feature (1 bit)
+- `extractQuestionBit(text)` — Extract question mark feature (1 bit)
+- `extractFirstWordBits(text)` — Extract first word category (2 bits)
+- `extractFeatures(post, featureSet, lengthThreshold)` — Extract all features from post
+
+**Message Framing (SPEC Section 8):**
+- `encodeFrame(message, options)` — Encode message into frame (version, flags, length, payload, auth tag)
+- `decodeFrame(bytes, epochKey, seqNum)` — Decode and verify message frame
+- `frameToBits(frame)` — Convert frame bytes to bit array
+- `bitsToFrame(bits)` — Convert bit array to frame bytes
+
+**Error Correction (SPEC Section 8.4):**
+- `rsEncode(data)` — Reed-Solomon encode with 8 ECC symbols
+- `rsDecode(data)` — Reed-Solomon decode with up to 4-symbol error correction
+
+#### `core/sender` — Message Transmission Pipeline
+
+- `MessageTransmitter` — Main class for sender pipeline (SPEC Section 9.1)
+  - `registerChannel(config)` — Register a channel for transmission
+  - `queueMessage(channelId, message, priority)` — Queue message for transmission
+  - `checkPost(channelId, text, hasMedia)` — Preview what bits a draft post encodes
+  - `confirmPost(channelId, postUri, text, hasMedia)` — Confirm published post and advance transmission
+  - `getStatus(channelId)` — Get current transmission status and progress
+  - `cancelTransmission(channelId)` — Cancel active transmission
+  - `getPendingBits(channelId)` — Get next required bits for transmission
+- `getNextRequiredBits(transmitter, channelId, maxBits)` — Get next N required bits
+
+**UI Helper Functions:**
+- `analyzePostFeatures(post, featureSet, lengthThreshold)` — Analyze post features with detailed breakdown
+- `estimateSignalProbability(text, hasMedia, rate)` — Estimate likelihood post is signal
+- `suggestModifications(text, targetBits, featureSet)` — Suggest text modifications to encode specific bits
+
+#### `core/receiver` — Message Reception and Decoding
+
+- `FeedMonitor` — Main class for receiver pipeline
+  - `fetchPosts(sources)` — Fetch posts from configured sources (Bluesky, RSS)
+  - `detectSignalPosts(posts, epochKey, rate)` — Filter signal posts from feed
+  - `extractBits(signalPosts, featureSet, lengthThreshold)` — Extract bits from signal posts
+  - `tryDecodeMessage(bits, epochKey, messageSeqNum)` — Attempt to decode message from bits
+  - `processChannel(channel, messageSeqNum)` — Full receive pipeline for one channel
+  - `startPolling(channelId, channel, onMessage)` — Start automatic polling
+  - `stopPolling(channelId)` — Stop polling for channel
+  - `stopAllPolling()` — Stop all polling
+- `deriveEpochKeysForGracePeriod(channelKey, beaconType, timestamp)` — Derive epoch keys for grace period (SPEC Section 4.1)
+
+### Adapter Modules
+
+#### `adapters/atproto` — Bluesky/AT Protocol Integration
+
+- `BlueskyAdapter` — Adapter for Bluesky social network
+  - `login(identifier, password)` — Authenticate with Bluesky account
+  - `getAuthorFeed(did, options)` — Fetch posts from author's feed
+  - `createPost(text, options)` — Publish a post
+  - `uploadImage(imageData, mimeType)` — Upload image for post attachment
+  - `static extractPostId(uri)` — Extract post ID from AT URI
+  - `resolveHandle(handle)` — Resolve handle to DID
+- `Post` interface — Unified post structure
+- `AuthorFeedResponse` interface — Feed response with pagination
+
+#### `adapters/rss` — RSS/Atom Feed Parsing
+
+- `RSSAdapter` — Adapter for RSS and Atom feeds
+  - `fetchFeed(url)` — Fetch and parse RSS/Atom feed
+- `FeedItem` interface — Unified feed item structure
+
+### Storage Module
+
+#### `storage` — Encrypted IndexedDB Persistence
+
+- `StorageInterface` — Main storage API
+  - `storeChannel(channel)` — Store encrypted channel configuration
+  - `getChannel(channelId)` — Retrieve decrypted channel
+  - `storeMessage(message)` — Store encrypted message
+  - `getMessages(channelId)` — Retrieve messages for channel
+  - `storeTransmissionState(state)` — Store transmission state
+  - `getTransmissionState(channelId)` — Retrieve transmission state
+  - `storeCredential(id, credential)` — Store encrypted credential
+  - `getCredential(id)` — Retrieve credential
+  - `lock()` — Lock storage (zero sensitive memory)
+  - `unlock(passphrase)` — Unlock storage with passphrase
+  - `delete(key)` — Delete encrypted data
+  - `clear()` — Clear all data
+- `Channel` interface — Channel configuration
+- `Message` interface — Stored message
+- `TransmissionState` interface — Sender state
+
+### State Module
+
+#### `state` — Reactive State Management
+
+Domain-isolated state stores using Zustand with state guards and memory zeroing.
+
+- `useSenderState()` — Sender state (message composition, post requirements)
+- `useReceiverState()` — Receiver state (beacon config, decoded messages)
+- `useChannelState()` — Channel state (active channel, beacon selection)
+- `useSecurityState()` — Security state (lock status, memory zeroing)
+- `useUIState()` — UI state (mode, navigation, alerts)
+
+## Test Architecture
+
+### Unit Tests (Vitest)
+
+**Command:** `npm run test:run`
+
+- **Framework:** Vitest with jsdom environment
+- **Configuration:** `vitest.config.ts`
+- **Coverage:** 794+ unit test cases
+- **Strategy:**
+  - Core protocol functions: exhaustive tests with SPEC test vectors
+  - Adapters: mock implementations for testing
+  - Storage: in-memory IndexedDB with fake-indexeddb
+  - State machines: state transition validation
+
+**Key Test Files:**
+- `src/core/crypto/*.test.ts` — Cryptographic primitives (HKDF, HMAC, XChaCha20-Poly1305, Argon2id)
+- `src/core/beacon/*.test.ts` — Beacon fetching and caching
+- `src/core/protocol/*.test.ts` — Feature extraction, post selection, frame encoding (SPEC test vectors Section 13)
+- `src/core/sender/*.test.ts` — Message transmission pipeline
+- `src/core/receiver/*.test.ts` — Message reception and decoding
+- `src/storage/*.test.ts` — Encrypted storage operations
+- `src/adapters/*.test.ts` — Adapter implementations
+
+**Test Isolation:**
+- Unit tests use `fake-indexeddb` for storage
+- Crypto tests use Web Crypto API and libsodium
+- No external API calls (mocked via adapters)
+
+### E2E Tests (Playwright)
+
+**Command:** `npm run e2e`
+**UI Mode:** `npm run e2e:ui`
+
+- **Framework:** Playwright with Chromium
+- **Configuration:** `playwright.config.ts`
+- **Test Directory:** `src/e2e`
+- **Reporter:** HTML report to `test-results/e2e`
+
+**Coverage:**
+- Channel creation workflow
+- End-to-end message transmission (compose → publish → receive)
+- Beacon synchronization and epoch transitions
+- Error handling and recovery
+
+**Test Isolation:**
+- Fresh `browser.newContext()` per test
+- No cross-test data sharing
+- Independent test data setup
+
+### Testing Mode
+
+**Enable via URL:** Append `?testing=1` to development URL
+**Default:** Testing mode enabled in dev/test environments
+
+**Features in Testing Mode:**
+- Signal/cover post labels visible on UI
+- Expanded activity log with detailed events
+- Inline feature bit display for diagnostics
+- `TestingModeContext` provider in React tree
+- Test utilities available in browser console
+
+### Test Utilities
+
+**Location:** `src/test/setup.ts`
+
+- `initSodium()` — Initialize libsodium for crypto tests
+- `createMockChannel()` — Create test channel configuration
+- `createMockPost()` — Create test post data
+- Mock adapters for Bluesky and RSS feeds
+
+### Running Tests
+
+```bash
+# Run all unit tests once
+npm run test:run
+
+# Run unit tests with UI
+npm test
+
+# Run E2E tests
+npm run e2e
+
+# Run E2E with UI mode (interactive)
+npm run e2e:ui
+
+# Update E2E screenshots
+npm run e2e:update
+
+# Type check entire project
+npm run typecheck
+
+# Format and lint
+npm run lint
+npm run format
+```
+
+### CI/CD Integration
+
+Tests run automatically on pull requests via GitHub Actions:
+- Unit tests: Quick feedback loop (< 30 seconds)
+- Type checking: Strict TypeScript compilation
+- E2E tests: Full integration validation (< 5 minutes)
+- Build validation: Production bundle generation
+
 ## License
 
 This reference implementation is open source. See LICENSE file for details.

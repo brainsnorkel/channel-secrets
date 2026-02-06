@@ -101,7 +101,7 @@ export function extractLengthBit(text: string, threshold: number): 0 | 1 {
 }
 
 /**
- * Extract media bit (SPEC.md Section 7.2)
+ * Extract media bit (SPEC.md Section 7.6)
  * Returns 1 if post has media, else 0
  */
 export function extractMediaBit(hasMedia: boolean): 0 | 1 {
@@ -109,7 +109,7 @@ export function extractMediaBit(hasMedia: boolean): 0 | 1 {
 }
 
 /**
- * Extract question mark bit (SPEC.md Section 7.3)
+ * Extract question mark bit (SPEC.md Section 7.1)
  * Returns 1 if text contains '?', else 0
  */
 export function extractQuestionBit(text: string): 0 | 1 {
@@ -117,7 +117,7 @@ export function extractQuestionBit(text: string): 0 | 1 {
 }
 
 /**
- * Extract first word category bits (SPEC.md Section 7.3, 7.5)
+ * Extract first word category bits (SPEC.md Section 7.2, 7.5)
  * Returns 2 bits:
  * - 0b00 = Pronoun
  * - 0b01 = Article/determiner

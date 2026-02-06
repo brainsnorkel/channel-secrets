@@ -428,7 +428,7 @@ export interface PassphraseDerivationResult {
 
 /**
  * Derive channel key from a shared passphrase
- * Per SPEC Section 4.3: Passphrase-Based Channel Setup
+ * Implementation extension supporting passphrase-based channel setup (SPEC Section 10)
  *
  * @param passphrase - Shared passphrase
  * @param myHandle - Your social media handle
