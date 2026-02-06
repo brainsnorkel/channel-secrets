@@ -30,6 +30,20 @@ interface BeaconCacheEntry {
 }
 
 /**
+ * Beacon status information for UI display
+ */
+export interface BeaconStatus {
+  /** Beacon type */
+  type: BeaconType;
+  /** Current status: live (fresh fetch), cached (using stale cache), failed (no data) */
+  status: 'live' | 'cached' | 'failed';
+  /** Timestamp of last successful fetch (null if never fetched) */
+  lastFetchTime: number | null;
+  /** How long ago the cached value was fetched (null if not using cache) */
+  cachedSince: number | null;
+}
+
+/**
  * Beacon cache: beaconType -> cached value
  */
 const beaconCache = new Map<BeaconType, BeaconCacheEntry>();
@@ -150,12 +164,14 @@ export async function fetchBitcoinBeacon(): Promise<string> {
 
 /**
  * Fetch current NIST Randomness Beacon value
+ * Primary: /pulse/last, Retry: same endpoint with backoff
  * Per beacon-sync spec requirement
  *
  * @returns NIST outputValue (hex string)
- * @throws Error if API fails
+ * @throws Error if both attempts fail
  */
 export async function fetchNistBeacon(): Promise<string> {
+  // Try primary fetch
   try {
     const response = await fetch('https://beacon.nist.gov/beacon/2.0/pulse/last', {
       signal: AbortSignal.timeout(5000),
@@ -179,8 +195,41 @@ export async function fetchNistBeacon(): Promise<string> {
     }
 
     return outputValue;
-  } catch (error) {
-    throw new Error(`NIST beacon fetch failed: ${error}`);
+  } catch (primaryError) {
+    console.warn('NIST beacon primary fetch failed, retrying after backoff:', primaryError);
+
+    // Wait 1 second before retry
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    // Retry same endpoint
+    try {
+      const response = await fetch('https://beacon.nist.gov/beacon/2.0/pulse/last', {
+        signal: AbortSignal.timeout(5000),
+      });
+
+      if (!response.ok) {
+        throw new Error(`NIST API returned HTTP ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      if (!data.pulse?.outputValue) {
+        throw new Error('NIST response missing pulse.outputValue field');
+      }
+
+      const outputValue = String(data.pulse.outputValue).toLowerCase();
+
+      // NIST outputValue should be a 512-bit hex string (128 hex chars)
+      if (!/^[0-9a-f]{128}$/i.test(outputValue)) {
+        throw new Error('Invalid NIST outputValue format');
+      }
+
+      return outputValue;
+    } catch (retryError) {
+      throw new Error(
+        `NIST beacon fetch failed after retry. Primary: ${primaryError}. Retry: ${retryError}`
+      );
+    }
   }
 }
 
@@ -264,6 +313,11 @@ export async function getBeaconValue(beaconType: BeaconType): Promise<string> {
  * Combines beacon fetch with epoch key derivation
  * Per SPEC Section 5.1
  *
+ * NOTE: This function does NOT automatically failover between beacon types
+ * (e.g., btc -> nist -> date). Cross-type failover would cause silent desync
+ * between sender and receiver, as they would derive different epoch keys.
+ * Switching beacon types must be an explicit user action on BOTH ends.
+ *
  * @param channelKey - Shared channel key (32 bytes)
  * @param beaconType - Beacon type to use
  * @returns Epoch key for current epoch (32 bytes)
@@ -298,7 +352,12 @@ export async function deriveEpochKeyForBeacon(
       return await deriveEpochKey(channelKey, beaconType, cached.value);
     }
 
-    throw new Error(`Failed to derive epoch key for ${beaconType}: ${error}`);
+    // First-launch empty cache scenario: provide clear guidance
+    throw new Error(
+      `Cannot connect to ${beaconType} beacon service. Check your internet connection. ` +
+        `If ${beaconType} beacon is unavailable, you can switch to date beacon as a fallback ` +
+        `(both sender and receiver must switch to the same beacon type).`
+    );
   }
 }
 
@@ -321,4 +380,46 @@ export function clearBeaconHistory(): void {
  */
 export function getBeaconCacheStatus(): Map<BeaconType, BeaconCacheEntry> {
   return new Map(beaconCache);
+}
+
+/**
+ * Get beacon status for UI display
+ * Shows whether a beacon is live, using cached data, or failed
+ *
+ * @param beaconType - Beacon type to check
+ * @returns Current beacon status
+ */
+export function getBeaconStatus(beaconType: BeaconType): BeaconStatus {
+  const cached = beaconCache.get(beaconType);
+  const now = Date.now();
+
+  if (!cached) {
+    // Never fetched
+    return {
+      type: beaconType,
+      status: 'failed',
+      lastFetchTime: null,
+      cachedSince: null,
+    };
+  }
+
+  const isExpired = now >= cached.expiresAt;
+
+  if (isExpired) {
+    // Cache expired, status is 'cached' (stale)
+    return {
+      type: beaconType,
+      status: 'cached',
+      lastFetchTime: cached.timestamp,
+      cachedSince: now - cached.timestamp,
+    };
+  }
+
+  // Cache is fresh, status is 'live'
+  return {
+    type: beaconType,
+    status: 'live',
+    lastFetchTime: cached.timestamp,
+    cachedSince: null,
+  };
 }

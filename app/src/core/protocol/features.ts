@@ -157,6 +157,40 @@ export function extractFirstWordBits(text: string): 0 | 1 | 2 | 3 {
 }
 
 /**
+ * Extract word count quartile bits (SPEC.md Section 7.1)
+ * Returns 2 bits based on quartile:
+ * - 0b00 = Q1 (1-5 words)
+ * - 0b01 = Q2 (6-15 words)
+ * - 0b10 = Q3 (16-30 words)
+ * - 0b11 = Q4 (31+ words)
+ *
+ * Note: 0 words (emoji-only posts) are mapped to 0b00
+ */
+export function extractWordCountBits(text: string): 0 | 1 | 2 | 3 {
+  const normalized = normalizeText(text);
+
+  // Use Unicode word segmentation to count words
+  const segmenter = new Intl.Segmenter('en', { granularity: 'word' });
+  const segments = Array.from(segmenter.segment(normalized));
+
+  // Count word-like segments only
+  const wordCount = segments.filter(s => s.isWordLike).length;
+
+  // Map to quartile buckets
+  if (wordCount <= 5) {
+    return 0b00; // Q1: 0-5 words (includes emoji-only at 0)
+  }
+  if (wordCount <= 15) {
+    return 0b01; // Q2: 6-15 words
+  }
+  if (wordCount <= 30) {
+    return 0b10; // Q3: 16-30 words
+  }
+  // Q4: 31+ words
+  return 0b11;
+}
+
+/**
  * Feature set type
  */
 export type FeatureId = 'len' | 'media' | 'qmark' | 'fword' | 'wcount';
@@ -200,9 +234,13 @@ export function extractFeatures(
         break;
       }
 
-      case 'wcount':
-        // TODO: Implement word count quartile feature when needed
-        throw new Error('wcount feature not yet implemented');
+      case 'wcount': {
+        const wcountBits = extractWordCountBits(text);
+        // Extract 2 bits from the value
+        bits.push((wcountBits >> 1) & 1); // High bit
+        bits.push(wcountBits & 1);         // Low bit
+        break;
+      }
 
       default:
         throw new Error(`Unknown feature: ${feature}`);

@@ -9,6 +9,7 @@ import {
   extractMediaBit,
   extractQuestionBit,
   extractFirstWordBits,
+  extractWordCountBits,
   extractFeatures,
   type FeatureId
 } from './features';
@@ -137,6 +138,51 @@ describe('extractFirstWordBits', () => {
   });
 });
 
+describe('extractWordCountBits', () => {
+  it('returns 0b00 for Q1 (0-5 words)', () => {
+    expect(extractWordCountBits('')).toBe(0b00);          // 0 words
+    expect(extractWordCountBits('Hello')).toBe(0b00);     // 1 word
+    expect(extractWordCountBits('Hello world')).toBe(0b00); // 2 words
+    expect(extractWordCountBits('One two three four five')).toBe(0b00); // 5 words
+  });
+
+  it('returns 0b01 for Q2 (6-15 words)', () => {
+    expect(extractWordCountBits('One two three four five six')).toBe(0b01); // 6 words
+    expect(extractWordCountBits('One two three four five six seven eight nine ten')).toBe(0b01); // 10 words
+    expect(extractWordCountBits('One two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen')).toBe(0b01); // 15 words
+  });
+
+  it('returns 0b10 for Q3 (16-30 words)', () => {
+    const sixteenWords = 'One two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen';
+    expect(extractWordCountBits(sixteenWords)).toBe(0b10); // 16 words
+
+    const thirtyWords = 'One two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen twenty alpha bravo charlie delta echo foxtrot golf hotel india julia';
+    expect(extractWordCountBits(thirtyWords)).toBe(0b10); // 30 words
+  });
+
+  it('returns 0b11 for Q4 (31+ words)', () => {
+    const thirtyOneWords = 'One two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen twenty alpha bravo charlie delta echo foxtrot golf hotel india julia kilo';
+    expect(extractWordCountBits(thirtyOneWords)).toBe(0b11); // 31 words
+
+    const fiftyWords = 'One two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen twenty alpha bravo charlie delta echo foxtrot golf hotel india julia kilo lima mike november oscar papa quebec romeo sierra tango uniform victor whiskey xray yankee zulu able baker charlie dog easy fox';
+    expect(extractWordCountBits(fiftyWords)).toBe(0b11); // 50 words
+  });
+
+  it('handles emoji-only posts (0 words)', () => {
+    expect(extractWordCountBits('🌅')).toBe(0b00);
+    expect(extractWordCountBits('🎉🎊🎈')).toBe(0b00);
+  });
+
+  it('normalizes text before counting', () => {
+    expect(extractWordCountBits('  hello  world  ')).toBe(0b00); // 2 words
+  });
+
+  it('counts test vector posts correctly', () => {
+    expect(extractWordCountBits('I just finished reading a great book!')).toBe(0b01); // 7 words (Q2)
+    expect(extractWordCountBits('Have you seen this amazing sunset? 🌅')).toBe(0b01); // 6 words (Q2)
+  });
+});
+
 describe('extractFeatures', () => {
   describe('SPEC.md Section 13.3 test vector 1', () => {
     const text = 'I just finished reading a great book!';
@@ -200,13 +246,29 @@ describe('extractFeatures', () => {
     expect(result.bitCount).toBe(1);
   });
 
-  it('throws error for unimplemented wcount feature', () => {
-    const text = 'Hello world';
+  it('extracts wcount feature correctly', () => {
+    const text = 'Hello world'; // 2 words = Q1 = 0b00
     const hasMedia = false;
 
-    expect(() => {
-      extractFeatures(text, hasMedia, ['wcount'], 50);
-    }).toThrow('wcount feature not yet implemented');
+    const result = extractFeatures(text, hasMedia, ['wcount'], 50);
+
+    expect(result.bits).toEqual([0, 0]); // wcount=0b00 = [0, 0] (high bit, low bit)
+    expect(result.bitCount).toBe(2);
+  });
+
+  it('extracts wcount with default feature set', () => {
+    const text = 'I just finished reading a great book!'; // 7 words = Q2 = 0b01
+    const hasMedia = false;
+
+    // Default feature set is ['len', 'media', 'qmark']
+    const defaultResult = extractFeatures(text, hasMedia, ['len', 'media', 'qmark'], 50);
+    expect(defaultResult.bits).toEqual([0, 0, 0]);
+    expect(defaultResult.bitCount).toBe(3);
+
+    // With wcount added
+    const wcountResult = extractFeatures(text, hasMedia, ['len', 'media', 'qmark', 'wcount'], 50);
+    expect(wcountResult.bits).toEqual([0, 0, 0, 0, 1]); // wcount=0b01 = [0, 1]
+    expect(wcountResult.bitCount).toBe(5);
   });
 
   it('throws error for unknown feature', () => {
