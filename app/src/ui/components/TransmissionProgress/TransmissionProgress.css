@@ -239,3 +239,28 @@
   color: var(--color-text-secondary, #8b949e);
   margin: 0;
 }
+
+/* Grace period indicator */
+.transmission-progress__grace {
+  padding: 10px 12px;
+  border-radius: 6px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.transmission-progress__grace--active {
+  background: rgba(255, 193, 7, 0.12);
+  border: 1px solid rgba(255, 193, 7, 0.4);
+  color: var(--color-warning, #ffc107);
+}
+
+.transmission-progress__grace-icon {
+  flex-shrink: 0;
+}
+
+.transmission-progress__grace-text {
+  font-weight: 500;
+}

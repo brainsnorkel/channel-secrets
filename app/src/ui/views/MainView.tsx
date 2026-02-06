@@ -3,8 +3,10 @@ import { FeedColumn } from '../components/FeedColumn';
 import { ComposeBox } from '../components/ComposeBox/ComposeBox';
 import { ContactList, type Contact } from '../components/ContactList/ContactList';
 import { TransmissionProgress } from '../components/TransmissionProgress/TransmissionProgress';
+import { EpochBoundaryWarning } from '../components/EpochBoundaryWarning/EpochBoundaryWarning';
 import type { FeedCardPost } from '../components/FeedCard';
 import type { Channel } from '../../schemas';
+import type { BeaconType } from '../../core/beacon';
 import type { TransmissionStatus } from '../../core/sender';
 import './MainView.css';
 
@@ -113,6 +115,7 @@ export const MainView: React.FC<MainViewProps> = ({
                 epochId={transmissionStatus.epochInfo?.epochId || 'unknown'}
                 epochExpiresAt={transmissionStatus.epochInfo?.expiresAt || Date.now() + 86400000}
                 startedAt={Date.now()}
+                beaconType={(transmissionStatus.beaconType || selectedChannel.beaconType || 'date') as BeaconType}
                 onCancel={onCancelTransmission}
                 isComplete={transmissionStatus.progress?.percentage === 100}
               />
@@ -121,6 +124,12 @@ export const MainView: React.FC<MainViewProps> = ({
 
           {/* Compose area */}
           <div className="main-view__compose-container">
+            {selectedChannel && transmissionStatus?.epochInfo && (
+              <EpochBoundaryWarning
+                beaconType={(transmissionStatus.beaconType || selectedChannel.beaconType || 'date') as BeaconType}
+                epochExpiresAt={transmissionStatus.epochInfo.expiresAt}
+              />
+            )}
             <ComposeBox
               channelId={selectedChannelId || undefined}
               requiredBits={requiredBits}

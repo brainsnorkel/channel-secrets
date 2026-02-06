@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import type { BeaconType } from '../../../core/beacon';
+import { getEpochInfo } from '../../../core/beacon';
 import './TransmissionProgress.css';
 
 export interface TransmissionProgressProps {
@@ -10,6 +12,7 @@ export interface TransmissionProgressProps {
   epochId: string;
   epochExpiresAt: number;  // Unix timestamp
   startedAt: number;  // Unix timestamp
+  beaconType: BeaconType;
   onCancel: () => void;
   isComplete?: boolean;
 }
@@ -23,12 +26,19 @@ export function TransmissionProgress({
   epochId,
   epochExpiresAt,
   startedAt,
+  beaconType,
   onCancel,
   isComplete = false,
 }: TransmissionProgressProps) {
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
   const [epochTimeLeft, setEpochTimeLeft] = useState<number>(0);
+
+  // Derive beacon-aware thresholds
+  const { gracePeriod } = getEpochInfo(beaconType);
+  const gracePeriodMs = gracePeriod * 1000;
+  const APPROACH_WARNING_MS = 60_000;
+  const approachThreshold = Math.min(APPROACH_WARNING_MS, gracePeriodMs);
 
   // Update epoch time remaining
   useEffect(() => {
@@ -80,11 +90,12 @@ export function TransmissionProgress({
     }
   };
 
-  const epochWarning = epochTimeLeft > 0 && epochTimeLeft < 60000; // < 60 seconds
+  const epochApproaching = epochTimeLeft > 0 && epochTimeLeft < approachThreshold;
+  const graceActive = epochTimeLeft > 0 && epochTimeLeft <= gracePeriodMs;
 
   if (isComplete) {
     return (
-      <div className="transmission-progress transmission-progress--complete">
+      <div className="transmission-progress transmission-progress--complete" data-testid="transmission-complete">
         <div className="transmission-progress__celebration">
           <div className="transmission-progress__check-icon">✓</div>
           <h3 className="transmission-progress__complete-title">Message sent!</h3>
@@ -97,20 +108,20 @@ export function TransmissionProgress({
   }
 
   return (
-    <div className="transmission-progress">
+    <div className="transmission-progress" data-testid="transmission-progress">
       <div className="transmission-progress__header">
         <h3 className="transmission-progress__title">Sending to: {contactName}</h3>
         <p className="transmission-progress__message">{truncatedMessage}</p>
       </div>
 
       <div className="transmission-progress__bar-container">
-        <div className="transmission-progress__bar">
+        <div className="transmission-progress__bar" data-testid="transmission-bar">
           <div
             className="transmission-progress__bar-fill"
             style={{ width: `${percentage}%` }}
           />
         </div>
-        <div className="transmission-progress__percentage">{percentage}%</div>
+        <div className="transmission-progress__percentage" data-testid="transmission-percentage">{percentage}%</div>
       </div>
 
       <div className="transmission-progress__stats">
@@ -128,21 +139,34 @@ export function TransmissionProgress({
             <span className="transmission-progress__stat-value">{formatTime(timeRemaining)}</span>
           </div>
         )}
+        <div className="transmission-progress__stat">
+          <span className="transmission-progress__stat-label">Grace period:</span>
+          <span className="transmission-progress__stat-value">{gracePeriod}s ({beaconType})</span>
+        </div>
       </div>
 
-      <div className={`transmission-progress__epoch ${epochWarning ? 'transmission-progress__epoch--warning' : ''}`}>
+      <div className={`transmission-progress__epoch ${epochApproaching ? 'transmission-progress__epoch--warning' : ''}`}>
         <div className="transmission-progress__epoch-id">
           <span className="transmission-progress__epoch-label">Current epoch:</span>
           <span className="transmission-progress__epoch-value">{epochId}</span>
         </div>
-        <div className="transmission-progress__epoch-timer">
-          {epochWarning && (
+        <div className="transmission-progress__epoch-timer" data-testid="transmission-epoch-timer">
+          {epochApproaching && (
             <span className="transmission-progress__epoch-warning-icon">⚠</span>
           )}
           <span className="transmission-progress__epoch-label">Expires in:</span>
           <span className="transmission-progress__epoch-value">{formatTime(epochTimeLeft / 1000)}</span>
         </div>
       </div>
+
+      {graceActive && (
+        <div className="transmission-progress__grace transmission-progress__grace--active" data-testid="transmission-grace-active">
+          <span className="transmission-progress__grace-icon">⏳</span>
+          <span className="transmission-progress__grace-text">
+            Grace period active ({formatTime(epochTimeLeft / 1000)} remaining)
+          </span>
+        </div>
+      )}
 
       <div className="transmission-progress__actions">
         {showCancelConfirm ? (
@@ -168,6 +192,7 @@ export function TransmissionProgress({
         ) : (
           <button
             className="transmission-progress__button transmission-progress__button--cancel"
+            data-testid="transmission-cancel"
             onClick={handleCancel}
           >
             Cancel Transmission

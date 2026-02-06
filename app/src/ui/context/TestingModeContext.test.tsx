@@ -24,11 +24,12 @@ describe('TestingModeContext', () => {
   });
 
   describe('useTestingMode', () => {
-    it('returns false by default when no activation method is set', () => {
+    it('returns true by default when no activation method is set', () => {
+      // Default is true: always show full help and assistive features
       const { result } = renderHook(() => useTestingMode(), {
         wrapper: createWrapper(),
       });
-      expect(result.current).toBe(false);
+      expect(result.current).toBe(true);
     });
 
     it('returns true when forceValue is true', () => {

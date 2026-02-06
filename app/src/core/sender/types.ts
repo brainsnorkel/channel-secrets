@@ -86,6 +86,7 @@ export interface TransmissionStatus {
     percentage: number;
   };
   queueLength: number;
+  beaconType?: BeaconType;
   epochInfo?: {
     epochId: string;
     expiresAt: number;

@@ -1,0 +1,37 @@
+.epoch-boundary-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  background: rgba(255, 193, 7, 0.08);
+  border: 1px solid rgba(255, 193, 7, 0.3);
+  border-radius: 6px;
+  margin-bottom: 12px;
+}
+
+.epoch-boundary-warning__icon {
+  flex-shrink: 0;
+  font-size: 16px;
+  line-height: 1.4;
+  color: var(--color-warning, #ffc107);
+}
+
+.epoch-boundary-warning__content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.epoch-boundary-warning__title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-warning, #ffc107);
+}
+
+.epoch-boundary-warning__detail {
+  margin: 0;
+  font-size: 12px;
+  color: var(--color-text-secondary, #8b949e);
+  line-height: 1.4;
+}

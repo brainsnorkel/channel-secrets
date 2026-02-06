@@ -90,8 +90,13 @@ export class MessageTransmitter {
   /** Get transmission status for a channel. */
   async getStatus(channelId: string): Promise<TransmissionStatus> {
     const state = await this.ensureState(channelId);
+    const channel = this.channels.get(channelId);
     if (!state.currentTransmission) {
-      return { active: false, queueLength: state.messageQueue.length };
+      return {
+        active: false,
+        queueLength: state.messageQueue.length,
+        beaconType: channel?.beaconType,
+      };
     }
     const tx = state.currentTransmission;
     return {
@@ -103,6 +108,7 @@ export class MessageTransmitter {
         percentage: (tx.bitPosition / tx.totalBits) * 100,
       },
       queueLength: state.messageQueue.length,
+      beaconType: channel?.beaconType,
       epochInfo: {
         epochId: tx.epochId,
         expiresAt: tx.epochExpiresAt,
