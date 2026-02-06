@@ -53,16 +53,12 @@ export interface Source {
  * Decoded message result
  */
 export interface DecodedMessage {
-  /** Message payload bytes */
   payload: Uint8Array;
-  /** Protocol version */
   version: number;
-  /** Whether message was encrypted */
   encrypted: boolean;
-  /** Epoch key used for decoding */
   epochKey: Uint8Array;
-  /** Number of bits accumulated */
   bitCount: number;
-  /** Timestamp of decode */
   decodedAt: Date;
+  /** Sequence number that successfully verified (for desync recovery) */
+  usedSeqNum: number;
 }

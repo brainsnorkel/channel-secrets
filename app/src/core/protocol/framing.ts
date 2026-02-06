@@ -16,6 +16,13 @@ const PROTOCOL_VERSION = 0x0;
 const FLAG_ENCRYPTED = 0x01; // Bit 0
 // const FLAG_COMPRESSED = 0x02; // Bit 1 (reserved, always 0 for now)
 
+// RS(255, 247): 255 byte block, 8 ECC symbols, 247 data bytes
+// Frame overhead: 3 bytes header + 8 bytes auth tag = 11 bytes
+// Unencrypted max payload: 247 - 11 = 236 bytes
+// Encrypted max payload: 247 - 11 - 16 (Poly1305 tag) = 220 bytes
+export const MAX_PAYLOAD_BYTES = 236;
+export const MAX_ENCRYPTED_PAYLOAD_BYTES = 220;
+
 /**
  * Convert bytes to bits (MSB first)
  */
@@ -86,6 +93,14 @@ export async function encodeFrame(
 ): Promise<Uint8Array> {
   if (epochKey.length !== 32) {
     throw new Error('Epoch key must be 32 bytes');
+  }
+
+  const maxBytes = encrypted ? MAX_ENCRYPTED_PAYLOAD_BYTES : MAX_PAYLOAD_BYTES;
+  if (payload.length > maxBytes) {
+    throw new Error(
+      `Payload too large: ${payload.length} bytes exceeds maximum ${maxBytes} bytes` +
+      (encrypted ? ' (encrypted)' : '')
+    );
   }
 
   let processedPayload = payload;

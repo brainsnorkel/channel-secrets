@@ -3,6 +3,7 @@
 
 import type { StorageInterface } from '../../storage';
 import type { QueuedMessage, TransmissionState, ChannelConfig, CurrentTransmission } from './types';
+import { MAX_PAYLOAD_BYTES } from '../protocol/framing';
 import { buildMessageFrame } from './message-builder';
 import { getEpochKey } from './epoch-manager';
 import { persistState } from './state-persistence';
@@ -28,7 +29,13 @@ export async function queueMessage(
   priority: 'normal' | 'high',
   storage: StorageInterface
 ): Promise<string> {
-  // Create queued message
+  const encodedLength = new TextEncoder().encode(message).length;
+  if (encodedLength > MAX_PAYLOAD_BYTES) {
+    throw new Error(
+      `Message too large: ${encodedLength} bytes exceeds maximum ${MAX_PAYLOAD_BYTES} bytes`
+    );
+  }
+
   const messageId = crypto.randomUUID();
   const queuedMessage: QueuedMessage = {
     id: messageId,
@@ -67,11 +74,15 @@ export async function cancelTransmission(
 
   const transmission = state.currentTransmission;
 
-  // Move current message back to front of queue
-  const message = state.messageQueue.find(m => m.id === transmission.messageId);
-  if (message) {
-    state.messageQueue.unshift(message);
-  }
+  // Reconstruct queued message and push back to front of queue.
+  // The original was shift()'d off in startNextTransmission, so
+  // find() would fail silently — we must reconstruct.
+  state.messageQueue.unshift({
+    id: transmission.messageId,
+    plaintext: transmission.plaintext,
+    queuedAt: Date.now(),
+    priority: 'high',
+  });
 
   zeroTransmissionSecrets(transmission);
   state.currentTransmission = null;
@@ -108,9 +119,9 @@ export async function startNextTransmission(
     state.messageSequenceNumber
   );
 
-  // Initialize transmission
   state.currentTransmission = {
     messageId: message.id,
+    plaintext: message.plaintext,
     encodedFrame: frame,
     totalBits: frameBits.length,
     bitPosition: 0,

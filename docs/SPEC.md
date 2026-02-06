@@ -484,24 +484,24 @@ epoch_key = HKDF-Expand(
     info = UTF8(info),
     length = 32
 )
-= 0x8b2c5a9f3d1e7b4a6c8f2d5e9a3b7c1d4f6e8a2b5c9d3e7f1a4b8c2d6e9f3a7b
+= 0xa317acc97f878f4098b4a1bb58570b06e41aa36615070d1ca8b3486cf2fbc3b3
 ```
 
 ### 13.2 Post Selection
 
 ```
-epoch_key = 0x8b2c5a9f3d1e7b4a6c8f2d5e9a3b7c1d4f6e8a2b5c9d3e7f1a4b8c2d6e9f3a7b
+epoch_key = 0xa317acc97f878f4098b4a1bb58570b06e41aa36615070d1ca8b3486cf2fbc3b3
 post_id = "3jxyz123abc"
 
 selection_hash = SHA256(epoch_key || UTF8(post_id))
-= 0x2a4e6c8f1b3d5a7e9c2f4d6b8a1e3c5f7d9b2a4c6e8f1d3b5a7c9e2f4d6b8a1c
+= 0x780d5f2b73e3caefb1c2199c36c8b15fd9809b97bd450fd65d8f28b2f2063641
 
 selection_value = bytes_to_uint64_be(selection_hash[0:8])
-= 0x2a4e6c8f1b3d5a7e = 3049827156438219390
+= 0x780d5f2b73e3caef = 8650675099481131759
 
 threshold (rate=0.25) = 0x3FFFFFFFFFFFFFFF = 4611686018427387903
 
-selected = (3049827156438219390 < 4611686018427387903) = true (SIGNAL POST)
+selected = (8650675099481131759 < 4611686018427387903) = false (COVER POST)
 ```
 
 ### 13.3 Feature Extraction
@@ -563,41 +563,41 @@ frame_without_auth = [version:4bits][flags:4bits][length:16bits][payload:16bits]
                    = 0x00 0x00 0x10 0x48 0x69
                    = 0x0000104869 (40 bits = 5 bytes)
 
-epoch_key = 0x8b2c5a9f3d1e7b4a6c8f2d5e9a3b7c1d4f6e8a2b5c9d3e7f1a4b8c2d6e9f3a7b
+epoch_key = 0xa317acc97f878f4098b4a1bb58570b06e41aa36615070d1ca8b3486cf2fbc3b3
 
 auth_input = frame_without_auth
 auth_tag = HMAC-SHA256(epoch_key, auth_input)[0:8]
-         = 0x3f7a2b9c5d1e4f8a
+         = 0x638125722a26a07b
 
 complete_frame = frame_without_auth || auth_tag
-               = 0x00001048693f7a2b9c5d1e4f8a (13 bytes, 104 bits)
+               = 0x0000104869638125722a26a07b (13 bytes, 104 bits)
 ```
 
 ### 13.6 Reed-Solomon Encoding
 
 ```
-message_frame = 0x00001048693f7a2b9c5d1e4f8a (13 bytes)
+message_frame = 0x0000104869638125722a26a07b (13 bytes)
 
 RS parameters:
   - GF(2^8), primitive polynomial 0x11D
   - 8 ECC symbols
 
 ecc_symbols = RS_encode(message_frame)
-            = 0xa1b2c3d4e5f6a7b8 (8 bytes)
+            (8 bytes, implementation-dependent)
 
 protected_frame = message_frame || ecc_symbols
-                = 0x00001048693f7a2b9c5d1e4f8aa1b2c3d4e5f6a7b8 (21 bytes)
+                (21 bytes)
 ```
 
 ### 13.7 Sequence Number and Nonce
 
 ```
-epoch_key = 0x8b2c5a9f3d1e7b4a6c8f2d5e9a3b7c1d4f6e8a2b5c9d3e7f1a4b8c2d6e9f3a7b
+epoch_key = 0xa317acc97f878f4098b4a1bb58570b06e41aa36615070d1ca8b3486cf2fbc3b3
 message_sequence_number = 0 (first message on this channel)
 
 nonce_input = epoch_key || UTF8("nonce") || uint64_be(message_sequence_number)
 nonce = SHA256(nonce_input)[0:24]
-      = 0x7c3a9b2e5d1f8c4a6b9e2d5f8a1c4b7e3d6a9c2f (24 bytes)
+      = 0xdb6d5c9c69af451209d98bcbbc594ac77c1adeb3a0e0082e (24 bytes)
 ```
 
 ---

@@ -61,40 +61,42 @@ export async function deriveEpochKeysForGracePeriod(
  * @param messageSeqNum - Message sequence number (default: 0)
  * @returns Decoded message or null if incomplete/invalid
  */
+// SPEC Section 8.3: try seq through seq+MAX_SEQ_SKIP to recover from missed messages
+const MAX_SEQ_SKIP = 5;
+
 export async function tryDecodeMessage(
   bits: number[],
   epochKey: Uint8Array,
   messageSeqNum: number = 0
-): Promise<DecodedMessage | null> {
-  // Need at least enough bits for minimal frame
-  // Minimum: 1 byte header + 2 bytes length + 8 bytes auth tag = 11 bytes = 88 bits
+): Promise<(DecodedMessage & { usedSeqNum: number }) | null> {
   if (bits.length < 88) {
     return null;
   }
 
-  // Convert bits to frame bytes
   const frameBytes = bitsToFrame(bits);
 
-  try {
-    // Attempt to decode frame
-    const decoded = await decodeFrame(frameBytes, epochKey, messageSeqNum);
+  for (let offset = 0; offset <= MAX_SEQ_SKIP; offset++) {
+    const candidateSeq = messageSeqNum + offset;
+    try {
+      const decoded = await decodeFrame(frameBytes, epochKey, candidateSeq);
 
-    if (!decoded.valid) {
-      return null;
+      if (decoded.valid) {
+        return {
+          payload: decoded.payload,
+          version: decoded.version,
+          encrypted: decoded.encrypted,
+          epochKey,
+          bitCount: bits.length,
+          decodedAt: new Date(),
+          usedSeqNum: candidateSeq,
+        };
+      }
+    } catch {
+      continue;
     }
-
-    return {
-      payload: decoded.payload,
-      version: decoded.version,
-      encrypted: decoded.encrypted,
-      epochKey,
-      bitCount: bits.length,
-      decodedAt: new Date(),
-    };
-  } catch {
-    // Frame decode failed (incomplete, invalid format, etc.)
-    return null;
   }
+
+  return null;
 }
 
 /**

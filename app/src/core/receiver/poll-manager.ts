@@ -35,7 +35,7 @@ export class PollManager {
         const seqNum = this.getSeqNum(channelId);
         const message = await processChannel(channel, adapters, seqNum);
         if (message) {
-          this.seqNums.set(channelId, seqNum + 1);
+          this.seqNums.set(channelId, message.usedSeqNum + 1);
           onMessage(message);
         }
       } catch (error) {

@@ -19,6 +19,7 @@ export interface QueuedMessage {
  */
 export interface CurrentTransmission {
   messageId: string;
+  plaintext: string;
   encodedFrame: Uint8Array;
   totalBits: number;
   bitPosition: number;

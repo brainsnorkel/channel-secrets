@@ -160,8 +160,9 @@ Epoch Key = HKDF-Expand(
 For each post, sender and receiver compute:
 
 ```
-signal_score = SHA256(epoch_key || post_id) as integer
-is_signal = signal_score < (2^256 × selection_rate)
+selection_hash = SHA256(epoch_key || post_id)
+signal_score = first 8 bytes of selection_hash as uint64
+is_signal = signal_score < (2^64 - 1) × selection_rate
 ```
 
 With **selection_rate = 0.25**, ~25% of any posts are signal posts. This matches natural posting variation—an adversary cannot identify true signal posts from statistical analysis alone.
