@@ -133,6 +133,7 @@ describe('BlueskyAdapter', () => {
           email: 'alice@example.com',
           accessJwt: 'jwt-token',
           refreshJwt: 'refresh-token',
+          active: true,
         };
 
         (adapter as any).sessionData = sessionData;
@@ -151,6 +152,7 @@ describe('BlueskyAdapter', () => {
           email: 'alice@example.com',
           accessJwt: 'jwt-token',
           refreshJwt: 'refresh-token',
+          active: true,
         };
 
         mockAgentInstance.resumeSession.mockResolvedValue({});
@@ -301,7 +303,7 @@ describe('BlueskyAdapter', () => {
 
       const error = await caughtPromise;
       expect(error).toBeInstanceOf(Error);
-      expect(error.message).toBe('Rate limit exceeded');
+      expect((error as Error).message).toBe('Rate limit exceeded');
       expect(mockAgentInstance.getAuthorFeed).toHaveBeenCalledTimes(5);
 
       vi.useRealTimers();
@@ -484,6 +486,7 @@ describe('BlueskyAdapter', () => {
         email: 'bob@example.com',
         accessJwt: 'new-jwt',
         refreshJwt: 'new-refresh',
+        active: true,
       };
 
       // Trigger the persist session handler
@@ -502,6 +505,7 @@ describe('BlueskyAdapter', () => {
         email: 'alice@example.com',
         accessJwt: 'updated-jwt',
         refreshJwt: 'updated-refresh',
+        active: true,
       };
 
       const persistSession = mockAgentInstance.persistSession;

@@ -13,12 +13,12 @@ import {
   type Message,
   type AtpSessionData,
 } from './index';
-import { openDB, type IDBPDatabase } from 'idb';
+import { openDB } from 'idb';
 
 // Mock argon2id to avoid slow production Argon2id parameters (64MB, 3 iterations)
 // We're testing storage operations, not key derivation correctness
 vi.mock('../core/crypto', async (importOriginal) => {
-  const actual = await importOriginal();
+  const actual = await importOriginal<Record<string, unknown>>();
   return {
     ...actual,
     argon2id: (password: string, salt: Uint8Array, _opsLimit?: number, _memLimit?: number): Uint8Array => {
@@ -73,7 +73,7 @@ describe('SecureStorage', () => {
     if (typeof indexedDB !== 'undefined') {
       const databases = ['feed_cache'];
       for (const dbName of databases) {
-        await new Promise<void>((resolve, reject) => {
+        await new Promise<void>((resolve, _reject) => {
           const request = indexedDB.deleteDatabase(dbName);
           request.onsuccess = () => resolve();
           request.onerror = () => resolve(); // Resolve even on error to avoid hanging
