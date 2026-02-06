@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { FeedColumn } from '../components/FeedColumn';
 import { ComposeBox } from '../components/ComposeBox/ComposeBox';
 import { ContactList, type Contact } from '../components/ContactList/ContactList';
@@ -9,6 +9,12 @@ import type { Channel } from '../../schemas';
 import type { BeaconType } from '../../core/beacon';
 import type { TransmissionStatus } from '../../core/sender';
 import './MainView.css';
+
+export interface ReceivedMessage {
+  id: string;
+  text: string;
+  receivedAt: Date;
+}
 
 export interface MainViewProps {
   // Channel management
@@ -24,7 +30,11 @@ export interface MainViewProps {
 
   // Actions
   onPublish: (text: string, hasMedia: boolean) => void;
+  onQueueMessage?: (message: string) => void;
   onCancelTransmission: () => void;
+
+  // Data
+  receivedMessages?: ReceivedMessage[];
 
   // Optional feed columns (for backward compatibility)
   columns?: Array<{
@@ -45,10 +55,15 @@ export const MainView: React.FC<MainViewProps> = ({
   transmissionStatus,
   requiredBits,
   onPublish,
+  onQueueMessage,
   onCancelTransmission,
+  receivedMessages = [],
   columns = [],
   showSignalIndicator = false
 }) => {
+  const [queueInput, setQueueInput] = useState('');
+  const MAX_PAYLOAD_CHARS = 236;
+
   // Map channels to contacts for ContactList
   const contacts: Contact[] = channels.map(channel => ({
     id: channel.id,
@@ -63,6 +78,14 @@ export const MainView: React.FC<MainViewProps> = ({
 
   // Check if we're actively transmitting on selected channel
   const isTransmitting = transmissionStatus?.active && selectedChannelId;
+
+  const handleQueueSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (queueInput.trim() && onQueueMessage) {
+      onQueueMessage(queueInput);
+      setQueueInput('');
+    }
+  };
 
   return (
     <div className="main-view">
@@ -136,7 +159,62 @@ export const MainView: React.FC<MainViewProps> = ({
               onPublish={onPublish}
               disabled={!selectedChannelId}
             />
+
+            {/* Queue Message Input */}
+            {selectedChannel && !isTransmitting && onQueueMessage && (
+              <div className="main-view__queue-section">
+                <form className="main-view__queue-form" onSubmit={handleQueueSubmit}>
+                  <div className="main-view__queue-header">
+                    <label htmlFor="queue-message" className="main-view__queue-label">
+                      Queue Secret Message
+                    </label>
+                    <span className="main-view__queue-counter">
+                      {queueInput.length} / {MAX_PAYLOAD_CHARS}
+                    </span>
+                  </div>
+                  <div className="main-view__queue-input-wrapper">
+                    <textarea
+                      id="queue-message"
+                      className="main-view__queue-input"
+                      value={queueInput}
+                      onChange={(e) => setQueueInput(e.target.value)}
+                      maxLength={MAX_PAYLOAD_CHARS}
+                      placeholder="Enter a message to hide in your next posts..."
+                      rows={2}
+                    />
+                    <button 
+                      type="submit" 
+                      className="main-view__queue-button"
+                      disabled={!queueInput.trim()}
+                    >
+                      Queue Message
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
           </div>
+
+          {/* Received Messages Section */}
+          {selectedChannel && receivedMessages.length > 0 && (
+            <div className="main-view__received">
+              <h3 className="main-view__received-title">Received Messages</h3>
+              <div className="main-view__received-list">
+                {receivedMessages.map((msg) => (
+                  <div key={msg.id} className="main-view__received-item">
+                    <div className="main-view__received-meta">
+                      <span className="main-view__received-time">
+                        {msg.receivedAt.toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="main-view__received-text">
+                      {msg.text}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Feed columns (if any) */}
           {columns.length > 0 && (

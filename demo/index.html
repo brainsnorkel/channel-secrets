@@ -1318,15 +1318,42 @@ body {
 .text-muted {
   color: var(--text-muted);
 }
+
+/* ============================================
+   ACCESSIBILITY
+   ============================================ */
+:focus-visible {
+  outline: 2px solid var(--accent-highlight);
+  outline-offset: 2px;
+}
+
+.skip-link {
+  position: absolute;
+  top: -100px;
+  left: 10px;
+  background: var(--accent-highlight);
+  color: white;
+  padding: 8px 12px;
+  z-index: 2000;
+  border-radius: 0 0 4px 4px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: top 0.2s;
+}
+
+.skip-link:focus {
+  top: 0;
+}
   </style>
 </head>
 <body>
+  <a href="#main-content" class="skip-link">Skip to main content</a>
   <!-- Header -->
   <header class="header">
     <div class="header-left">
       <div class="logo">🔐 StegoChannel Demo</div>
       <div class="beacon-status">
-        <select id="beaconModeSelect" onchange="changeBeaconMode(this.value)" style="background: var(--bg-card); color: var(--accent-info); border: 1px solid var(--border-color); border-radius: 4px; padding: 2px 6px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; cursor: pointer;">
+        <select id="beaconModeSelect" onchange="changeBeaconMode(this.value)" aria-label="Beacon Mode" style="background: var(--bg-card); color: var(--accent-info); border: 1px solid var(--border-color); border-radius: 4px; padding: 2px 6px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; cursor: pointer;">
           <option value="manual">Manual</option>
           <option value="accelerated">Accelerated</option>
           <option value="fixed">Fixed Seed</option>
@@ -1344,7 +1371,7 @@ body {
       </div>
       <div class="speed-control" id="speedControl" style="display: none;">
         <span>Speed:</span>
-        <input type="range" class="speed-slider" id="speedSlider" min="0.5" max="4" step="0.5" value="1">
+        <input type="range" class="speed-slider" id="speedSlider" min="0.5" max="4" step="0.5" value="1" aria-label="Simulation Speed">
         <span id="speedValue">1x</span>
       </div>
     </div>
@@ -1354,19 +1381,19 @@ body {
       <button class="btn" onclick="openAboutModal()">How It Works</button>
       <button class="btn" onclick="openScenarioModal()">Scenarios</button>
       <button class="btn" onclick="resetDemo()">Reset</button>
-      <button onclick="toggleKeyboardHelp()" class="keyboard-hint" title="Keyboard shortcuts"><kbd>?</kbd></button>
-      <button class="btn btn-icon" id="inspectorToggle" onclick="toggleInspector()" title="Toggle Inspector (I)">I</button>
+      <button onclick="toggleKeyboardHelp()" class="keyboard-hint" title="Keyboard shortcuts" aria-label="Keyboard shortcuts"><kbd>?</kbd></button>
+      <button class="btn btn-icon" id="inspectorToggle" onclick="toggleInspector()" title="Toggle Inspector (I)" aria-expanded="true" aria-controls="inspector" aria-label="Toggle Inspector">I</button>
     </div>
   </header>
 
   <!-- Main Container -->
-  <main class="main-container">
+  <main class="main-container" id="main-content">
     <div class="split-view" id="splitView">
       <!-- Sender Panel -->
       <div class="panel" id="senderPanel">
         <div class="panel-header">
           <div class="panel-title">
-            <span class="icon">📤</span>
+            <span class="icon" role="img" aria-label="Sender">📤</span>
             Sender View
           </div>
         </div>
@@ -1374,8 +1401,8 @@ body {
           <!-- Message Input -->
           <div class="message-input-section">
             <h3>Message to Transmit</h3>
-            <input type="text" class="message-input" id="messageInput" placeholder="Enter your secret message..." value="HELLO">
-            <div class="binary-display" id="binaryDisplay">
+            <input type="text" class="message-input" id="messageInput" placeholder="Enter your secret message..." value="HELLO" aria-label="Message to transmit">
+            <div class="binary-display" id="binaryDisplay" aria-live="polite">
               Binary: 01001000 01000101 01001100 01001100 01001111 (40 bits + frame overhead)
             </div>
           </div>
@@ -1403,7 +1430,7 @@ body {
           <!-- Draft Composition -->
           <div class="draft-section">
             <h3>Compose Draft Post</h3>
-            <textarea class="draft-textarea" id="draftTextarea" placeholder="Write your post..." oninput="updateFeatureDisplay()"></textarea>
+            <textarea class="draft-textarea" id="draftTextarea" placeholder="Write your post..." oninput="updateFeatureDisplay()" aria-label="Draft post content"></textarea>
             <label class="media-toggle">
               <input type="checkbox" id="hasMedia" onchange="updateFeatureDisplay()">
               Has media attachment
@@ -1469,7 +1496,7 @@ body {
 
           <!-- Sender's Feed View -->
           <h3 style="margin-bottom: var(--spacing-sm);">Published Posts</h3>
-          <div class="feed" id="senderFeed">
+          <div class="feed" id="senderFeed" aria-live="polite">
             <div class="waiting-status">No posts yet. Compose and publish your first post!</div>
           </div>
         </div>
@@ -1479,7 +1506,7 @@ body {
       <div class="panel" id="receiverPanel">
         <div class="panel-header">
           <div class="panel-title">
-            <span class="icon">📥</span>
+            <span class="icon" role="img" aria-label="Receiver">📥</span>
             Receiver View
           </div>
         </div>
@@ -1510,14 +1537,14 @@ body {
               Accumulated bits: <span id="accumulatedBits">--</span>
             </div>
 
-            <div class="decoded-message partial" id="decodedMessage">
+            <div class="decoded-message partial" id="decodedMessage" aria-live="polite">
               Waiting for signal posts...
             </div>
           </div>
 
           <!-- Receiver's Feed View -->
           <h3 style="margin-bottom: var(--spacing-sm);">Incoming Feed</h3>
-          <div class="feed" id="receiverFeed">
+          <div class="feed" id="receiverFeed" aria-live="polite">
             <div class="waiting-status">Monitoring for posts...</div>
           </div>
         </div>
@@ -1525,10 +1552,10 @@ body {
     </div>
 
     <!-- Inspector Panel -->
-    <aside class="inspector open" id="inspector">
+    <aside class="inspector open" id="inspector" aria-label="Protocol Inspector" aria-hidden="false">
       <div class="inspector-header">
-        <div class="inspector-title">🔬 Protocol Inspector</div>
-        <button class="modal-close" onclick="toggleInspector()">×</button>
+        <div class="inspector-title"><span role="img" aria-label="Microscope">🔬</span> Protocol Inspector</div>
+        <button class="modal-close" onclick="toggleInspector()" aria-label="Close Inspector">×</button>
       </div>
 
       <div class="inspector-tabs">
@@ -1634,11 +1661,11 @@ body {
   </main>
 
   <!-- About Modal -->
-  <div class="modal-overlay" id="aboutModal">
+  <div class="modal-overlay" id="aboutModal" role="dialog" aria-modal="true" aria-labelledby="aboutModalTitle">
     <div class="modal" style="max-width: 700px;">
       <div class="modal-header">
-        <h2>🔐 How StegoChannel Works</h2>
-        <button class="modal-close" onclick="closeAboutModal()">×</button>
+        <h2 id="aboutModalTitle">🔐 How StegoChannel Works</h2>
+        <button class="modal-close" onclick="closeAboutModal()" aria-label="Close modal">×</button>
       </div>
       <div class="modal-content" style="line-height: 1.7;">
         <div style="background: var(--bg-tertiary); border-radius: 8px; padding: var(--spacing-md); margin-bottom: var(--spacing-lg);">
@@ -1697,30 +1724,30 @@ body {
   </div>
 
   <!-- Scenario Modal -->
-  <div class="modal-overlay" id="scenarioModal">
+  <div class="modal-overlay" id="scenarioModal" role="dialog" aria-modal="true" aria-labelledby="scenarioModalTitle">
     <div class="modal">
       <div class="modal-header">
-        <h2>Load Scenario</h2>
-        <button class="modal-close" onclick="closeScenarioModal()">×</button>
+        <h2 id="scenarioModalTitle">Load Scenario</h2>
+        <button class="modal-close" onclick="closeScenarioModal()" aria-label="Close modal">×</button>
       </div>
       <div class="modal-content">
         <div class="scenario-list">
-          <div class="scenario-item" onclick="loadScenario('quick')">
+          <div class="scenario-item" role="button" tabindex="0" onclick="loadScenario('quick')">
             <h3>⚡ Quick Demo</h3>
             <p>Short "HI" message to see the protocol in action fast.</p>
             <div class="duration">~90 seconds in auto mode</div>
           </div>
-          <div class="scenario-item" onclick="loadScenario('educational')">
+          <div class="scenario-item" role="button" tabindex="0" onclick="loadScenario('educational')">
             <h3>📚 Educational Walkthrough</h3>
             <p>Step-by-step tutorial with explanations at each decision point.</p>
             <div class="duration">~5 minutes in step mode</div>
           </div>
-          <div class="scenario-item" onclick="loadScenario('epoch')">
+          <div class="scenario-item" role="button" tabindex="0" onclick="loadScenario('epoch')">
             <h3>🔄 Epoch Boundary</h3>
             <p>Demonstrates key rederivation when epoch changes mid-transmission.</p>
             <div class="duration">~3 minutes</div>
           </div>
-          <div class="scenario-item" onclick="loadScenario('long')">
+          <div class="scenario-item" role="button" tabindex="0" onclick="loadScenario('long')">
             <h3>📝 Long Message</h3>
             <p>Multi-frame transmission showing full message assembly.</p>
             <div class="duration">~10 minutes</div>
@@ -2292,12 +2319,14 @@ function renderFeeds() {
     return;
   }
 
-  const renderPost = (post, showSignalInfo) => {
+    const renderPost = (post, showSignalInfo) => {
     const isSelected = AppState.ui.selectedPostId === post.id;
     return `
       <div class="post-card ${post.isSignal ? 'signal' : 'cover'} ${isSelected ? 'selected' : ''}"
+           role="button" tabindex="0"
            onclick="selectPost('${post.id}')">
         <div class="post-header">
+
           <div class="post-author">
             <div class="avatar">${post.author[0]}</div>
             <span class="author-name">${post.author}</span>
@@ -2314,7 +2343,7 @@ function renderFeeds() {
           ${post.isSignal && showSignalInfo
             ? `<span class="extracted-bits">bits: ${post.features.bitsString}</span>`
             : '<span></span>'}
-          ${post.hasMedia ? '<span class="media-indicator">📷</span>' : ''}
+          ${post.hasMedia ? '<span class="media-indicator" role="img" aria-label="Has media">📷</span>' : ''}
         </div>
       </div>
     `;
@@ -2533,7 +2562,16 @@ function nextStep() {
 // ============================================
 function toggleInspector() {
   AppState.ui.inspectorOpen = !AppState.ui.inspectorOpen;
-  document.getElementById('inspector').classList.toggle('open', AppState.ui.inspectorOpen);
+  const inspector = document.getElementById('inspector');
+  const btn = document.getElementById('inspectorToggle');
+  
+  inspector.classList.toggle('open', AppState.ui.inspectorOpen);
+  inspector.setAttribute('aria-hidden', !AppState.ui.inspectorOpen);
+  
+  if (btn) {
+    btn.setAttribute('aria-expanded', AppState.ui.inspectorOpen);
+  }
+  
   document.getElementById('splitView').classList.toggle('inspector-open', AppState.ui.inspectorOpen);
 }
 
@@ -2742,6 +2780,13 @@ function escapeHtml(text) {
 
 // Keyboard shortcuts
 document.addEventListener('keydown', (e) => {
+  // Accessibility: Click handler for role="button"
+  if ((e.key === 'Enter' || e.key === ' ') && e.target.getAttribute('role') === 'button') {
+    e.preventDefault();
+    e.target.click();
+    return;
+  }
+
   if (e.key === 'Escape') {
     closeAboutModal();
     closeScenarioModal();
@@ -2782,6 +2827,9 @@ function toggleKeyboardHelp() {
   helpEl = document.createElement('div');
   helpEl.id = 'keyboardHelp';
   helpEl.className = 'keyboard-help-overlay';
+  helpEl.setAttribute('role', 'dialog');
+  helpEl.setAttribute('aria-modal', 'true');
+  helpEl.setAttribute('aria-label', 'Keyboard Shortcuts');
   helpEl.innerHTML = `
     <div class="keyboard-help-content">
       <h3>Keyboard Shortcuts</h3>

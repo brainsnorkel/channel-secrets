@@ -72,6 +72,7 @@ describe('getEpochKey', () => {
       messageQueue: [],
       currentTransmission: {
         messageId: 'msg-1',
+        plaintext: 'test',
         encodedFrame: new Uint8Array([0]),
         totalBits: 10,
         bitPosition: 0,
@@ -104,6 +105,7 @@ describe('getEpochKey', () => {
       messageQueue: [],
       currentTransmission: {
         messageId: 'msg-1',
+        plaintext: 'test',
         encodedFrame: new Uint8Array([0]),
         totalBits: 10,
         bitPosition: 0,

@@ -95,6 +95,7 @@ describe('poll-manager', () => {
       epochKey: new Uint8Array(32),
       bitCount: 100,
       decodedAt: new Date(),
+      usedSeqNum: 0,
     };
 
     mockProcessChannel.mockResolvedValueOnce(fakeMessage);

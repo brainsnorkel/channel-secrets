@@ -33,6 +33,7 @@ function makeActiveState(pendingBits: number[]): TransmissionState {
     messageQueue: [],
     currentTransmission: {
       messageId: 'msg-1',
+      plaintext: 'test',
       encodedFrame: new Uint8Array([0]),
       totalBits: pendingBits.length,
       bitPosition: 0,

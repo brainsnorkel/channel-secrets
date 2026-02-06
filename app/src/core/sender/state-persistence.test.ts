@@ -107,6 +107,7 @@ describe('persistState', () => {
       messageQueue: [],
       currentTransmission: {
         messageId: 'msg-tx',
+        plaintext: 'test message',
         encodedFrame: new Uint8Array([1, 2, 3]),
         totalBits: 24,
         bitPosition: 8,

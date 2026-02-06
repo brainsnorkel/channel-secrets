@@ -106,6 +106,7 @@ describe('cancelTransmission', () => {
       messageQueue: [{ id: 'msg-1', plaintext: 'hello', queuedAt: 1000, priority: 'normal' }],
       currentTransmission: {
         messageId: 'msg-1',
+        plaintext: 'hello',
         encodedFrame: new Uint8Array([0]),
         totalBits: 10,
         bitPosition: 3,
@@ -142,6 +143,7 @@ describe('cancelTransmission', () => {
       messageQueue: [msg],
       currentTransmission: {
         messageId: 'msg-requeue',
+        plaintext: 'requeue me',
         encodedFrame: new Uint8Array([0]),
         totalBits: 10,
         bitPosition: 0,

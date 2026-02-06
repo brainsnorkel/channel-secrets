@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { UnlockScreen } from './ui/components/UnlockScreen';
-import { MainView } from './ui/views/MainView';
+import { MainView, type ReceivedMessage } from './ui/views/MainView';
 import { BlueskyLogin } from './ui/components/BlueskyLogin/BlueskyLogin';
 import ChannelWizard from './ui/components/ChannelWizard/ChannelWizard';
 import {
@@ -42,6 +42,7 @@ function App() {
   const [transmitter, setTransmitter] = useState<MessageTransmitter | null>(null);
   const [transmissionStatus, setTransmissionStatus] = useState<TransmissionStatus | null>(null);
   const [requiredBits, setRequiredBits] = useState<number[] | null>(null);
+  const [receivedMessages] = useState<ReceivedMessage[]>([]); // Placeholder for received messages
 
   // Get selected channel (used for display purposes)
   const _selectedChannel = channels.find(c => c.id === selectedChannelId) || null;
@@ -301,7 +302,6 @@ function App() {
     const bits = await getNextRequiredBits(transmitter, channelId);
     setRequiredBits(bits);
   };
-  void handleQueueMessage; // Will be used when UI for queueing messages is added
 
   // Handle transmission cancel
   const handleCancelTransmission = async () => {
@@ -342,6 +342,8 @@ function App() {
         transmissionStatus={transmissionStatus}
         requiredBits={requiredBits}
         onPublish={handlePublish}
+        onQueueMessage={(msg) => selectedChannelId && handleQueueMessage(selectedChannelId, msg)}
+        receivedMessages={receivedMessages}
         onCancelTransmission={handleCancelTransmission}
       />
 
