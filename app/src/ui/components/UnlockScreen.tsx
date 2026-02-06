@@ -29,7 +29,7 @@ export const UnlockScreen: React.FC<UnlockScreenProps> = ({
   }, [handleSubmit, loading]);
 
   return (
-    <div className="unlock-screen">
+    <div className="unlock-screen" data-testid="unlock-screen">
       <div className="unlock-screen__container">
         <div className="unlock-screen__logo">
           <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -51,6 +51,7 @@ export const UnlockScreen: React.FC<UnlockScreenProps> = ({
                 id="passphrase"
                 type={showPassphrase ? 'text' : 'password'}
                 className="unlock-screen__input"
+                data-testid="unlock-passphrase-input"
                 value={passphrase}
                 onChange={(e) => setPassphrase(e.target.value)}
                 onKeyDown={handleKeyDown}
@@ -93,6 +94,7 @@ export const UnlockScreen: React.FC<UnlockScreenProps> = ({
           <button
             type="submit"
             className="unlock-screen__submit"
+            data-testid="unlock-submit"
             disabled={passphrase.trim().length === 0 || loading}
           >
             {loading ? (

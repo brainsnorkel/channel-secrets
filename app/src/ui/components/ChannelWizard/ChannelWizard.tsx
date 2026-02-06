@@ -65,6 +65,7 @@ function Step2({
         <button
           type="button"
           className="wizard-action-button primary"
+          data-testid="wizard-create-channel"
           onClick={() => onSelect('create')}
         >
           <span className="wizard-action-icon">➕</span>
@@ -76,6 +77,7 @@ function Step2({
         <button
           type="button"
           className="wizard-action-button secondary"
+          data-testid="wizard-import-channel"
           onClick={() => onSelect('import')}
         >
           <span className="wizard-action-icon">📥</span>
@@ -145,6 +147,7 @@ function Step3Create({
             onChange={(e) => onChange(e.target.value)}
             placeholder="Enter or generate passphrase"
             className="wizard-input"
+            data-testid="wizard-passphrase-input"
           />
           <button
             type="button"
@@ -224,6 +227,7 @@ function Step3Import({
           onChange={(e) => onChange(e.target.value)}
           placeholder="stegochannel:v0:..."
           className="wizard-textarea"
+          data-testid="wizard-channel-key-input"
           rows={4}
         />
         {showValidation && (
@@ -277,6 +281,7 @@ function Step4({
           onChange={(e) => onChangeName(e.target.value)}
           placeholder="Alice"
           className="wizard-input"
+          data-testid="wizard-contact-name"
         />
         <small className="wizard-help">A friendly name to identify this channel</small>
       </div>
@@ -290,6 +295,7 @@ function Step4({
           onChange={(e) => onChangeHandle(e.target.value)}
           placeholder="@alice.bsky.social"
           className="wizard-input"
+          data-testid="wizard-contact-handle"
         />
         {showHandleValidation && (
           <div className={`wizard-validation ${handleValid ? 'valid' : 'invalid'}`}>
@@ -520,6 +526,7 @@ export default function ChannelWizard({
       role="dialog"
       aria-modal="true"
       aria-labelledby="wizard-title"
+      data-testid="channel-wizard"
     >
       <div className="wizard-modal">
         {/* Progress indicator */}
@@ -536,7 +543,7 @@ export default function ChannelWizard({
 
         {/* Step header */}
         <div className="wizard-header">
-          <span className="wizard-step-number">
+          <span className="wizard-step-number" data-testid="wizard-step-number">
             Step {currentStep} of {STEPS.length}
           </span>
           <h2 id="wizard-title" className="wizard-title">
@@ -546,7 +553,7 @@ export default function ChannelWizard({
         </div>
 
         {/* Step content */}
-        <div className="wizard-body">
+        <div className="wizard-body" data-testid={`wizard-step-content-${currentStep}`}>
           {currentStep === 1 && <Step1 />}
           {currentStep === 2 && (
             <Step2
@@ -615,6 +622,7 @@ export default function ChannelWizard({
               <button
                 type="button"
                 className="wizard-button primary"
+                data-testid="wizard-next"
                 onClick={handleNext}
                 disabled={!canProceed()}
               >

@@ -421,7 +421,7 @@ export function OnboardingModal({
   };
 
   return (
-    <div className="onboarding-overlay" role="dialog" aria-modal="true" aria-labelledby="onboarding-title">
+    <div className="onboarding-overlay" role="dialog" aria-modal="true" aria-labelledby="onboarding-title" data-testid="onboarding-modal">
       <div className="onboarding-modal">
         {/* Progress indicator */}
         <div className="onboarding-progress">
@@ -429,19 +429,20 @@ export function OnboardingModal({
             <div
               key={s.id}
               className={`onboarding-progress-dot ${s.id === currentStep ? 'active' : ''} ${s.id < currentStep ? 'completed' : ''}`}
+              data-testid={`onboarding-step-indicator-${s.id}`}
             />
           ))}
         </div>
 
         {/* Step header */}
         <div className="onboarding-header">
-          <span className="onboarding-step-number">Step {currentStep} of {STEPS.length}</span>
+          <span className="onboarding-step-number" data-testid="onboarding-step-number">Step {currentStep} of {STEPS.length}</span>
           <h2 id="onboarding-title" className="onboarding-title">{step.title}</h2>
           <p className="onboarding-subtitle">{step.description}</p>
         </div>
 
         {/* Step content */}
-        <div className="onboarding-body">
+        <div className="onboarding-body" data-testid={`onboarding-step-content-${currentStep}`}>
           {currentStep === 1 && <Step1 />}
           {currentStep === 2 && <Step2 />}
           {currentStep === 3 && <Step3 />}
@@ -458,21 +459,21 @@ export function OnboardingModal({
         <div className="onboarding-footer">
           <div className="onboarding-footer-left">
             {isFirstStep ? (
-              <button type="button" className="onboarding-link" onClick={handleFamiliarSkip}>
+              <button type="button" className="onboarding-link" onClick={handleFamiliarSkip} data-testid="onboarding-familiar-skip">
                 I'm familiar with StegoChannel
               </button>
             ) : (
-              <button type="button" className="onboarding-button secondary" onClick={handleBack}>
+              <button type="button" className="onboarding-button secondary" onClick={handleBack} data-testid="onboarding-back">
                 Back
               </button>
             )}
           </div>
           <div className="onboarding-footer-right">
-            <button type="button" className="onboarding-button tertiary" onClick={handleSkip}>
+            <button type="button" className="onboarding-button tertiary" onClick={handleSkip} data-testid="onboarding-skip">
               Skip
             </button>
             {!isLastStep && (
-              <button type="button" className="onboarding-button primary" onClick={handleNext}>
+              <button type="button" className="onboarding-button primary" onClick={handleNext} data-testid="onboarding-next">
                 Next
               </button>
             )}

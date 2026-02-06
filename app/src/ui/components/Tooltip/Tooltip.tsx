@@ -98,9 +98,9 @@ export function Tooltip({
   // Testing mode: inline display
   if (testingMode) {
     return (
-      <span className={`tooltip-wrapper tooltip-testing ${className}`}>
+      <span className={`tooltip-wrapper tooltip-testing ${className}`} data-testid={`tooltip-${id}`}>
         {children}
-        <span className="tooltip-inline" role="note" aria-label={content.long}>
+        <span className="tooltip-inline" role="note" aria-label={content.long} data-testid={`tooltip-content-${id}`}>
           <span className="tooltip-inline-text">{content.long}</span>
           {content.specRef && (
             <span className="tooltip-spec-ref">SPEC.md {content.specRef}</span>
@@ -112,12 +112,13 @@ export function Tooltip({
 
   // Production mode: interactive popover
   return (
-    <span className={`tooltip-wrapper ${className}`}>
+    <span className={`tooltip-wrapper ${className}`} data-testid={`tooltip-${id}`}>
       {children}
       <button
         ref={triggerRef}
         type="button"
         className="tooltip-trigger"
+        data-testid={`tooltip-trigger-${id}`}
         onClick={handleTriggerClick}
         onKeyDown={handleTriggerKeyDown}
         aria-expanded={isOpen}
@@ -131,6 +132,7 @@ export function Tooltip({
         <div
           ref={popoverRef}
           className={`tooltip-popover tooltip-popover-${placement}`}
+          data-testid={`tooltip-content-${id}`}
           role="dialog"
           aria-modal="false"
           aria-label="Tooltip"

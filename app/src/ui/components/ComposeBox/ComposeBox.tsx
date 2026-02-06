@@ -58,10 +58,11 @@ export const ComposeBox: React.FC<ComposeBoxProps> = ({
   };
 
   return (
-    <div className="compose-box">
+    <div className="compose-box" data-testid="compose-box">
       <div className="compose-area">
         <textarea
           className="compose-textarea"
+          data-testid="compose-input"
           placeholder="What's happening?"
           value={text}
           onChange={(e) => setText(e.target.value)}
@@ -82,6 +83,7 @@ export const ComposeBox: React.FC<ComposeBoxProps> = ({
 
           <button
             className="publish-button"
+            data-testid="compose-publish"
             onClick={handlePublish}
             disabled={disabled || !text.trim()}
             type="button"
@@ -93,7 +95,7 @@ export const ComposeBox: React.FC<ComposeBoxProps> = ({
 
       <div className="analysis-panel">
         {/* Feature display */}
-        <div className="feature-display">
+        <div className="feature-display" data-testid="compose-features">
           <h3>Your post encodes:</h3>
           <div className="bits-display">
             <div className={`bit-item ${getBitClass('len', features.len, requiredBits, isTransmitting)}`}>

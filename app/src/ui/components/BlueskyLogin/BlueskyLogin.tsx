@@ -58,7 +58,7 @@ export const BlueskyLogin: React.FC<BlueskyLoginProps> = ({
   }, [handleSubmit, isLoading]);
 
   return (
-    <div className="bluesky-login">
+    <div className="bluesky-login" data-testid="bluesky-login">
       <div className="bluesky-login__container">
         <div className="bluesky-login__logo">
           <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
@@ -90,6 +90,7 @@ export const BlueskyLogin: React.FC<BlueskyLoginProps> = ({
               id="handle"
               type="text"
               className="bluesky-login__input"
+              data-testid="bluesky-handle-input"
               value={handle}
               onChange={(e) => setHandle(e.target.value)}
               onKeyDown={handleKeyDown}
@@ -109,6 +110,7 @@ export const BlueskyLogin: React.FC<BlueskyLoginProps> = ({
                 id="appPassword"
                 type={showPassword ? 'text' : 'password'}
                 className="bluesky-login__input"
+                data-testid="bluesky-password-input"
                 value={appPassword}
                 onChange={(e) => setAppPassword(e.target.value)}
                 onKeyDown={handleKeyDown}
@@ -159,6 +161,7 @@ export const BlueskyLogin: React.FC<BlueskyLoginProps> = ({
             <button
               type="submit"
               className="bluesky-login__submit"
+              data-testid="bluesky-login-submit"
               disabled={handle.trim().length === 0 || appPassword.trim().length === 0 || isLoading}
             >
               {isLoading ? (
