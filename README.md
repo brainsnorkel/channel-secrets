@@ -73,10 +73,12 @@ Sender                          Network                         Receiver
 Explore StegoChannel visually in your browser:
 
 ```bash
-cd demo
-npm install
-npm run dev
-# Visit http://localhost:5173
+# Option 1: Open directly in your browser
+open demo/index.html
+
+# Option 2: Serve with any static file server
+npx serve demo
+# Visit http://localhost:3000
 ```
 
 The demo shows:
@@ -249,7 +251,12 @@ An **interactive browser demo** in `demo/` shows:
 - Complete encode/decode cycle
 
 ```bash
-cd demo && npm install && npm run dev
+# Option 1: Open directly in your browser
+open demo/index.html
+
+# Option 2: Serve with any static file server
+npx serve demo
+# Visit http://localhost:3000
 ```
 
 ### Application

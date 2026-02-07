@@ -1459,7 +1459,7 @@ body {
                   <span class="feature-bit bit-0" id="questionBit">0</span>
                 </span>
               </div>
-              <div class="feature-row">
+              <div class="feature-row" id="fwordRow" style="display: none;">
                 <span class="feature-label">First Word</span>
                 <span class="feature-value">
                   <span id="fwordValue">other</span>
@@ -1469,11 +1469,11 @@ body {
               </div>
               <div class="feature-row">
                 <span class="feature-label">Extracted</span>
-                <span class="feature-value mono" id="extractedBits">00011</span>
+                <span class="feature-value mono" id="extractedBits">000</span>
               </div>
               <div class="feature-row">
                 <span class="feature-label">Needed</span>
-                <span class="feature-value mono" id="neededBits">01001</span>
+                <span class="feature-value mono" id="neededBits">010</span>
               </div>
             </div>
 
@@ -1517,7 +1517,7 @@ body {
             <div class="frame-display">
               <div class="frame-section">
                 <span class="frame-label">Header:</span>
-                <span class="frame-value pending" id="frameHeader">Waiting for 0xA5...</span>
+                <span class="frame-value pending" id="frameHeader">Waiting for version+flags byte...</span>
               </div>
               <div class="frame-section">
                 <span class="frame-label">Length:</span>
@@ -1593,13 +1593,21 @@ body {
           </div>
 
           <div class="inspector-section">
-            <h4>Derivation Formula</h4>
+            <h4>Derivation Formula (SPEC §5.1)</h4>
             <div style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-secondary); background: var(--bg-card); padding: var(--spacing-sm); border-radius: 4px;">
-              epoch_key = HKDF-SHA256(<br>
-              &nbsp;&nbsp;ikm: channel_key,<br>
-              &nbsp;&nbsp;salt: beacon_value,<br>
-              &nbsp;&nbsp;info: "stego-epoch"<br>
-              )
+              epoch_key = HKDF-Expand(<br>
+              &nbsp;&nbsp;prk: channel_key,<br>
+              &nbsp;&nbsp;info: "{beacon_id}:{beacon_value}:stegochannel-v0",<br>
+              &nbsp;&nbsp;length: 32<br>
+              )<br><br>
+              selection = SHA256(epoch_key || post_id)<br>
+              is_signal = uint64(hash[0:8]) &lt; threshold
+            </div>
+          </div>
+          <div class="inspector-section" id="testVectorSection">
+            <h4>SPEC Test Vector Verification</h4>
+            <div id="testVectorResults" style="font-family: var(--font-mono); font-size: 0.8rem; background: var(--bg-card); padding: var(--spacing-sm); border-radius: 4px;">
+              Running...
             </div>
           </div>
         </div>
@@ -1677,26 +1685,25 @@ body {
         <h3 style="color: var(--accent-signal); margin-bottom: var(--spacing-sm);">📤 Sender Side</h3>
         <ol style="color: var(--text-secondary); margin-bottom: var(--spacing-lg); padding-left: var(--spacing-lg);">
           <li style="margin-bottom: var(--spacing-sm);">Enter a secret message (e.g., "HELLO")</li>
-          <li style="margin-bottom: var(--spacing-sm);">The message is converted to bits: <code style="background: var(--bg-card); padding: 2px 6px; border-radius: 3px;">01001000 01000101...</code></li>
-          <li style="margin-bottom: var(--spacing-sm);">Write posts naturally—each post's <strong>features</strong> encode 5 bits:
+          <li style="margin-bottom: var(--spacing-sm);">The message is framed with a header, length, and HMAC authentication tag</li>
+          <li style="margin-bottom: var(--spacing-sm);">Write posts naturally—each post's <strong>features</strong> encode 3 bits:
             <ul style="margin-top: var(--spacing-xs); list-style: disc; padding-left: var(--spacing-md);">
-              <li><strong>Length ≥ 50 chars</strong> → bit 1, otherwise → bit 0</li>
+              <li><strong>Length ≥ 50 graphemes</strong> → bit 1, otherwise → bit 0</li>
               <li><strong>Has media</strong> → bit 1, otherwise → bit 0</li>
               <li><strong>Contains ?</strong> → bit 1, otherwise → bit 0</li>
-              <li><strong>First word category</strong> → 2 bits (pronoun=00, article=01, verb=10, other=11)</li>
             </ul>
           </li>
-          <li style="margin-bottom: var(--spacing-sm);">When a post's bits match the next needed bits → publish as <span style="color: var(--accent-signal); font-weight: 600;">SIGNAL</span></li>
-          <li style="margin-bottom: var(--spacing-sm);">Otherwise → publish as <span style="color: var(--accent-cover);">COVER</span> (camouflage traffic)</li>
+          <li style="margin-bottom: var(--spacing-sm);">Whether a post is <span style="color: var(--accent-signal); font-weight: 600;">SIGNAL</span> or <span style="color: var(--accent-cover);">COVER</span> is determined by its hash — the sender doesn't choose</li>
+          <li style="margin-bottom: var(--spacing-sm);">The sender must ensure signal posts have the right feature bits before publishing</li>
         </ol>
 
         <h3 style="color: var(--accent-info); margin-bottom: var(--spacing-sm);">📥 Receiver Side</h3>
         <ol style="color: var(--text-secondary); margin-bottom: var(--spacing-lg); padding-left: var(--spacing-lg);">
           <li style="margin-bottom: var(--spacing-sm);">Monitor the sender's public feed</li>
-          <li style="margin-bottom: var(--spacing-sm);">For each post, compute: <code style="background: var(--bg-card); padding: 2px 6px; border-radius: 3px;">hash(author + content + epoch)</code></li>
-          <li style="margin-bottom: var(--spacing-sm);">If <strong>hash &lt; threshold</strong> → it's a SIGNAL post, extract the 3 feature bits</li>
-          <li style="margin-bottom: var(--spacing-sm);">Accumulate bits until the full message is reconstructed</li>
-          <li style="margin-bottom: var(--spacing-sm);">Verify the MAC to confirm authenticity</li>
+          <li style="margin-bottom: var(--spacing-sm);">For each post, compute: <code style="background: var(--bg-card); padding: 2px 6px; border-radius: 3px;">SHA256(epoch_key || post_id)</code></li>
+          <li style="margin-bottom: var(--spacing-sm);">If <strong>uint64(hash[0:8]) &lt; threshold</strong> → it's a SIGNAL post, extract the 3 feature bits</li>
+          <li style="margin-bottom: var(--spacing-sm);">Accumulate bits until the full message frame is reconstructed</li>
+          <li style="margin-bottom: var(--spacing-sm);">Verify the HMAC-SHA256 auth tag to confirm authenticity</li>
         </ol>
 
         <h3 style="color: var(--accent-highlight); margin-bottom: var(--spacing-sm);">🔑 The Key Insight</h3>
@@ -1709,9 +1716,18 @@ body {
 
         <h3 style="color: var(--accent-warning); margin-bottom: var(--spacing-sm);">⏱️ Why So Slow?</h3>
         <p style="color: var(--text-secondary); margin-bottom: var(--spacing-lg);">
-          At ~5 bits per signal post and ~25% signal rate, transmitting "HELLO" (40 bits) requires roughly 8 signal posts spread over days of normal posting.
+          At 3 bits per signal post and ~25% signal rate, transmitting "HELLO" (40 bits + frame overhead) requires many signal posts spread over days of normal posting.
           <strong style="color: var(--text-primary);">This slowness is the feature, not a bug</strong>—it makes the channel indistinguishable from normal activity.
         </p>
+        <div style="background: var(--bg-card); border-radius: 8px; padding: var(--spacing-md); margin-bottom: var(--spacing-lg);">
+          <p style="color: var(--accent-warning); font-weight: 600; margin-bottom: var(--spacing-xs);">⚠️ Demo Simplifications</p>
+          <p style="color: var(--text-secondary); font-size: 0.85rem; margin: 0;">
+            This demo omits: <strong>Reed-Solomon error correction</strong> (SPEC §8.4),
+            <strong>XChaCha20-Poly1305 encryption</strong> (SPEC §8.3),
+            <strong>sequence number management</strong>, and <strong>epoch grace periods</strong> (SPEC §4.1).
+            Core selection, key derivation, and feature extraction match the full specification.
+          </p>
+        </div>
 
         <div style="text-align: center; padding-top: var(--spacing-md); border-top: 1px solid var(--border-color);">
           <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: var(--spacing-sm);">
@@ -1774,7 +1790,8 @@ const AppState = {
   // Channel configuration
   channelKey: null,
   epochKey: null,
-  threshold: 0.25,
+  threshold: 0n, // BigInt — computed from rate via Crypto.computeThreshold()
+  bitsPerPost: 3, // Default: 3 (len, media, qmark). Extended: 5 (+fword)
 
   // Beacon state
   beacon: {
@@ -1835,52 +1852,76 @@ function notifyChange() {
 
 // ============================================
 // CRYPTO UTILITIES (Web Crypto API)
+// Implements SPEC.md Sections 3, 5, 6
 // ============================================
 const Crypto = {
   encoder: new TextEncoder(),
   decoder: new TextDecoder(),
 
+  // SHA-256 hash (SPEC §3)
   async sha256(data) {
     const buffer = typeof data === 'string' ? this.encoder.encode(data) : data;
     const hash = await crypto.subtle.digest('SHA-256', buffer);
     return new Uint8Array(hash);
   },
 
-  async hkdf(ikm, salt, info, length = 32) {
-    const ikmBuffer = typeof ikm === 'string' ? this.encoder.encode(ikm) : ikm;
-    const saltBuffer = typeof salt === 'string' ? this.encoder.encode(salt) : salt;
-    const infoBuffer = typeof info === 'string' ? this.encoder.encode(info) : info;
-
-    const keyMaterial = await crypto.subtle.importKey(
-      'raw', ikmBuffer, { name: 'HKDF' }, false, ['deriveBits']
-    );
-
-    const derivedBits = await crypto.subtle.deriveBits(
-      { name: 'HKDF', hash: 'SHA-256', salt: saltBuffer, info: infoBuffer },
-      keyMaterial,
-      length * 8
-    );
-
-    return new Uint8Array(derivedBits);
-  },
-
-  async hmac(key, data) {
+  // Internal: full 32-byte HMAC-SHA256 (used by hkdfExpand)
+  async hmacFull(key, data) {
     const keyBuffer = typeof key === 'string' ? this.encoder.encode(key) : key;
     const dataBuffer = typeof data === 'string' ? this.encoder.encode(data) : data;
-
     const cryptoKey = await crypto.subtle.importKey(
       'raw', keyBuffer, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
     );
-
     const signature = await crypto.subtle.sign('HMAC', cryptoKey, dataBuffer);
     return new Uint8Array(signature);
   },
 
-  // Convert hash to fraction [0, 1)
-  hashToFraction(hash) {
-    const view = new DataView(hash.buffer);
-    const value = view.getUint32(0, false); // First 4 bytes, big-endian
-    return value / 0xFFFFFFFF;
+  // HMAC-SHA256 truncated to 64 bits (SPEC §8.2)
+  async hmac(key, data) {
+    const full = await this.hmacFull(key, data);
+    return full.slice(0, 8);
+  },
+
+  // HKDF-Expand only (RFC 5869 §2.3, SPEC §5.1)
+  // Uses channel_key directly as PRK — NO Extract step
+  async hkdfExpand(prk, info, length = 32) {
+    const infoBytes = typeof info === 'string' ? this.encoder.encode(info) : info;
+    const hashLen = 32; // SHA-256 output
+    const n = Math.ceil(length / hashLen);
+    if (n > 255) throw new Error('HKDF-Expand: requested length too long');
+
+    const okm = new Uint8Array(length);
+    let previous = new Uint8Array(0);
+    let offset = 0;
+
+    for (let i = 1; i <= n; i++) {
+      // T(i) = HMAC-SHA256(PRK, T(i-1) || info || byte(i))
+      const hmacInput = new Uint8Array(previous.length + infoBytes.length + 1);
+      hmacInput.set(previous, 0);
+      hmacInput.set(infoBytes, previous.length);
+      hmacInput[previous.length + infoBytes.length] = i;
+
+      previous = await this.hmacFull(prk, hmacInput);
+      const copyLen = Math.min(hashLen, length - offset);
+      okm.set(previous.subarray(0, copyLen), offset);
+      offset += copyLen;
+    }
+    return okm;
+  },
+
+  // Convert first 8 bytes of hash to BigInt uint64 BE (SPEC §6)
+  hashToUint64(hash) {
+    const view = new DataView(hash.buffer, hash.byteOffset, hash.byteLength);
+    return view.getBigUint64(0, false); // big-endian
+  },
+
+  // Compute selection threshold from rate (SPEC §6.1)
+  // threshold = floor(rate * (2^64 - 1)) using pure bigint arithmetic
+  computeThreshold(rate = 0.25) {
+    const maxUint64 = 0xFFFFFFFFFFFFFFFFn;
+    const precision = 1_000_000_000n;
+    const numerator = BigInt(Math.round(rate * 1_000_000_000));
+    return (maxUint64 * numerator) / precision;
   },
 
   // Hex encoding
@@ -1896,7 +1937,16 @@ const Crypto = {
     return bytes;
   },
 
-  // Deterministic PRNG from seed
+  // Concatenate Uint8Arrays
+  concat(...arrays) {
+    const total = arrays.reduce((sum, a) => sum + a.length, 0);
+    const result = new Uint8Array(total);
+    let offset = 0;
+    for (const arr of arrays) { result.set(arr, offset); offset += arr.length; }
+    return result;
+  },
+
+  // Deterministic PRNG from seed (for demo beacon simulation only)
   seededRandom(seed) {
     let state = 0;
     for (let i = 0; i < seed.length; i++) {
@@ -1911,37 +1961,73 @@ const Crypto = {
 
 // ============================================
 // PROTOCOL IMPLEMENTATION
+// Implements SPEC.md Sections 6, 7, 8
 // ============================================
 const Protocol = {
-  // Extract features from post content (5 bits: length, media, question, fword_high, fword_low)
+  // Normalize text per SPEC §7.4: NFC + whitespace collapse + trim
+  normalizeText(text) {
+    return text.normalize('NFC').replace(/\s+/g, ' ').trim();
+  },
+
+  // Count grapheme clusters per SPEC §7.3 (UAX #29)
+  countGraphemes(text) {
+    try {
+      const segmenter = new Intl.Segmenter('en', { granularity: 'grapheme' });
+      return [...segmenter.segment(text)].length;
+    } catch {
+      return text.length; // Fallback for older browsers
+    }
+  },
+
+  // Extract features from post content (SPEC §7)
+  // Default: 3 bits (len, media, qmark). Extended: +2 bits (fword)
   extractFeatures(content, hasMedia) {
-    const lengthBit = content.length >= 50 ? 1 : 0;
+    const normalized = this.normalizeText(content);
+    const graphemeCount = this.countGraphemes(normalized);
+    const lengthBit = graphemeCount >= 50 ? 1 : 0;
     const mediaBit = hasMedia ? 1 : 0;
-    const questionBit = content.includes('?') ? 1 : 0;
-    const fwordBits = this.extractFirstWordBits(content);
+    const questionBit = normalized.includes('?') ? 1 : 0;
+
+    // Extended features (fword) — available but not default
+    const fwordBits = this.extractFirstWordBits(normalized);
     const fwordHigh = (fwordBits >> 1) & 1;
     const fwordLow = fwordBits & 1;
 
+    const bitsPerPost = AppState.bitsPerPost || 3;
+    const bitsString = bitsPerPost === 5
+      ? `${lengthBit}${mediaBit}${questionBit}${fwordHigh}${fwordLow}`
+      : `${lengthBit}${mediaBit}${questionBit}`;
+
     return {
-      length: content.length,
+      graphemeCount,
+      rawLength: content.length,
       lengthBit,
       hasMedia,
       mediaBit,
-      hasQuestion: content.includes('?'),
+      hasQuestion: normalized.includes('?'),
       questionBit,
       fwordCategory: fwordBits,
       fwordHigh,
       fwordLow,
-      bits: (lengthBit << 4) | (mediaBit << 3) | (questionBit << 2) | (fwordHigh << 1) | fwordLow,
-      bitsString: `${lengthBit}${mediaBit}${questionBit}${fwordHigh}${fwordLow}`
+      bitsString,
+      bitsPerPost
     };
   },
 
-  // Extract first word category bits (2 bits)
+  // Extract first word category bits (2 bits) — SPEC §7.2
   extractFirstWordBits(text) {
-    const PRONOUNS = ['i', 'me', 'my', 'mine', 'we', 'us', 'our', 'you', 'your', 'he', 'him', 'his', 'she', 'her', 'they', 'them', 'their', 'it', 'its', 'who', 'what', 'which'];
-    const ARTICLES = ['a', 'an', 'the', 'this', 'that', 'these', 'those', 'some', 'any', 'no', 'every', 'each'];
-    const VERBS = ['is', 'are', 'was', 'were', 'be', 'been', 'am', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'can', 'could', 'may', 'might', 'must', 'go', 'get', 'make', 'see', 'know', 'think', 'just', 'want', 'need', 'try'];
+    const PRONOUNS = ['i', 'me', 'my', 'mine', 'myself', 'we', 'us', 'our', 'ours', 'ourselves',
+      'you', 'your', 'yours', 'yourself', 'yourselves', 'he', 'him', 'his', 'himself',
+      'she', 'her', 'hers', 'herself', 'it', 'its', 'itself', 'they', 'them', 'their',
+      'theirs', 'themselves', 'who', 'whom', 'whose', 'what', 'which'];
+    const ARTICLES = ['a', 'an', 'the', 'this', 'that', 'these', 'those', 'some', 'any',
+      'no', 'every', 'each', 'either', 'neither', 'another', 'such'];
+    const VERBS = ['is', 'are', 'was', 'were', 'be', 'been', 'being', 'am', 'have', 'has',
+      'had', 'having', 'do', 'does', 'did', 'doing', 'will', 'would', 'shall', 'should',
+      'can', 'could', 'may', 'might', 'must', 'go', 'goes', 'went', 'going', 'gone',
+      'get', 'gets', 'got', 'getting', 'make', 'makes', 'made', 'making', 'see', 'sees',
+      'saw', 'seeing', 'seen', 'know', 'knows', 'knew', 'knowing', 'known', 'think',
+      'thinks', 'thought', 'thinking'];
 
     const trimmed = text.trim();
     const match = trimmed.match(/^[a-zA-Z]+/);
@@ -1954,70 +2040,100 @@ const Protocol = {
     return 0b11;
   },
 
-  // Check if post is a signal (hash < threshold)
-  async isSignal(post, epochKey, threshold) {
-    const hashInput = `${post.author}|${post.content}|${AppState.beacon.epoch}`;
-    const hash = await Crypto.sha256(hashInput);
-    const fraction = Crypto.hashToFraction(hash);
+  // Check if post is a signal post (SPEC §6)
+  // selection_hash = SHA256(epoch_key || UTF8(post_id))
+  // is_signal = uint64_be(hash[0:8]) < threshold
+  async isSignal(postId, epochKey, threshold) {
+    const postIdBytes = Crypto.encoder.encode(postId);
+    const input = Crypto.concat(epochKey, postIdBytes);
+    const hash = await Crypto.sha256(input);
+    const selectionValue = Crypto.hashToUint64(hash);
     return {
-      isSignal: fraction < threshold,
+      isSignal: selectionValue < threshold,
       hash: Crypto.toHex(hash),
-      fraction,
+      selectionValue,
       threshold
     };
   },
 
-  // Convert message to bits
+  // Convert message to bits (UTF-8 byte-level)
   messageToBits(message) {
+    const bytes = Crypto.encoder.encode(message);
     const bits = [];
-    for (const char of message) {
-      const code = char.charCodeAt(0);
+    for (const byte of bytes) {
       for (let i = 7; i >= 0; i--) {
-        bits.push((code >> i) & 1);
+        bits.push((byte >> i) & 1);
       }
     }
     return bits;
   },
 
-  // Convert bits to message
+  // Convert bits to message (UTF-8 byte-level)
   bitsToMessage(bits) {
-    let message = '';
+    const bytes = [];
     for (let i = 0; i + 7 < bits.length; i += 8) {
       let byte = 0;
       for (let j = 0; j < 8; j++) {
         byte = (byte << 1) | bits[i + j];
       }
-      if (byte >= 32 && byte < 127) {
-        message += String.fromCharCode(byte);
-      }
+      bytes.push(byte);
     }
-    return message;
+    try {
+      return Crypto.decoder.decode(new Uint8Array(bytes));
+    } catch {
+      // Fallback for incomplete/invalid UTF-8
+      return bytes.filter(b => b >= 32 && b < 127).map(b => String.fromCharCode(b)).join('');
+    }
   },
 
-  // Get next required bits from message (5 bits per signal post)
+  // Get next required bits from message
   getNextRequiredBits(messageBits, bitsSent) {
+    const bitsPerPost = AppState.bitsPerPost || 3;
     const bits = [];
-    for (let i = 0; i < 5 && bitsSent + i < messageBits.length; i++) {
+    for (let i = 0; i < bitsPerPost && bitsSent + i < messageBits.length; i++) {
       bits.push(messageBits[bitsSent + i]);
     }
-    while (bits.length < 5) bits.push(0);
+    while (bits.length < bitsPerPost) bits.push(0);
     return bits.join('');
   },
 
-  // Build simple message frame
+  // Build message frame (SPEC §8.1)
+  // Format: [version:4|flags:4] [length_hi:8] [length_lo:8] [payload...] [auth_tag:64]
+  // ⚠️ Simplified: no Reed-Solomon ECC, no encryption
   buildFrame(message) {
-    // Simplified frame: header (0xA5) + length + data + MAC
-    const header = [1, 0, 1, 0, 0, 1, 0, 1]; // 0xA5
-    const length = message.length;
-    const lengthBits = [];
-    for (let i = 7; i >= 0; i--) {
-      lengthBits.push((length >> i) & 1);
-    }
-    const dataBits = this.messageToBits(message);
-    // Simplified MAC: just repeat first 8 bits
-    const mac = dataBits.slice(0, 8);
+    const payload = Crypto.encoder.encode(message);
+    const headerByte = 0x00; // version=0, flags=0 (plaintext, no compression)
+    const lengthInBits = payload.length * 8;
+    const lengthHigh = (lengthInBits >> 8) & 0xFF;
+    const lengthLow = lengthInBits & 0xFF;
 
-    return [...header, ...lengthBits, ...dataBits, ...mac];
+    const frameWithoutAuth = new Uint8Array(3 + payload.length);
+    frameWithoutAuth[0] = headerByte;
+    frameWithoutAuth[1] = lengthHigh;
+    frameWithoutAuth[2] = lengthLow;
+    frameWithoutAuth.set(payload, 3);
+    return frameWithoutAuth;
+  },
+
+  // Build frame with HMAC auth tag (SPEC §8.2)
+  async buildFrameWithAuth(message, epochKey) {
+    const frameWithoutAuth = this.buildFrame(message);
+    const authTag = await Crypto.hmac(epochKey, frameWithoutAuth); // 8 bytes
+    const completeFrame = new Uint8Array(frameWithoutAuth.length + authTag.length);
+    completeFrame.set(frameWithoutAuth);
+    completeFrame.set(authTag, frameWithoutAuth.length);
+    return completeFrame;
+  },
+
+  // Convert frame to bits (MSB-first)
+  frameToBits(frame) {
+    const bits = [];
+    for (const byte of frame) {
+      for (let i = 7; i >= 0; i--) {
+        bits.push((byte >> i) & 1);
+      }
+    }
+    return bits;
   }
 };
 
@@ -2027,24 +2143,23 @@ const Protocol = {
 const Beacon = {
   async init() {
     AppState.channelKey = await Crypto.sha256(AppState.beacon.seed);
+    // Threshold is constant for a given rate — not derived from epoch key (SPEC §6.1)
+    AppState.threshold = Crypto.computeThreshold(0.25);
     await this.updateEpoch();
     logEvent('epoch', `Initialized with seed "${AppState.beacon.seed}"`);
   },
 
   async updateEpoch() {
-    // Generate beacon value from seed + epoch
+    // Generate beacon value from seed + epoch (simulated for demo)
     const beaconInput = `${AppState.beacon.seed}-epoch-${AppState.beacon.epoch}`;
     AppState.beacon.value = await Crypto.sha256(beaconInput);
 
-    // Derive epoch key
-    AppState.epochKey = await Crypto.hkdf(
-      AppState.channelKey,
-      AppState.beacon.value,
-      'stego-epoch'
-    );
-
-    // Calculate threshold from epoch key
-    AppState.threshold = Crypto.hashToFraction(AppState.epochKey);
+    // Derive epoch key using HKDF-Expand (SPEC §5.1)
+    // info = "beaconId:beaconValue:stegochannel-v0"
+    const beaconId = `demo-epoch-${AppState.beacon.epoch}`;
+    const beaconValue = Crypto.toHex(AppState.beacon.value);
+    const info = `${beaconId}:${beaconValue}:stegochannel-v0`;
+    AppState.epochKey = await Crypto.hkdfExpand(AppState.channelKey, info);
 
     // Update UI
     updateBeaconDisplay();
@@ -2091,9 +2206,10 @@ function changeBeaconMode(mode) {
 // ============================================
 let postIdCounter = 0;
 
-async function createPost(content, hasMedia, forceSignal = null) {
+async function createPost(content, hasMedia) {
+  const postId = `post-${++postIdCounter}`;
   const post = {
-    id: `post-${++postIdCounter}`,
+    id: postId,
     author: 'Alice',
     content,
     hasMedia,
@@ -2102,38 +2218,34 @@ async function createPost(content, hasMedia, forceSignal = null) {
     features: Protocol.extractFeatures(content, hasMedia)
   };
 
-  // Determine if signal or cover
-  const signalCheck = await Protocol.isSignal(post, AppState.epochKey, AppState.threshold);
+  // Determine signal/cover from hash — sender does NOT choose (SPEC §6)
+  const signalCheck = await Protocol.isSignal(postId, AppState.epochKey, AppState.threshold);
   post.hash = signalCheck.hash;
-  post.hashFraction = signalCheck.fraction;
-
-  // For demo purposes, we can force signal/cover based on feature matching
-  if (forceSignal !== null) {
-    post.isSignal = forceSignal;
-  } else {
-    post.isSignal = signalCheck.isSignal;
-  }
+  post.selectionValue = signalCheck.selectionValue;
+  post.isSignal = signalCheck.isSignal;
 
   AppState.posts.unshift(post);
 
+  const bitsPerPost = AppState.bitsPerPost || 3;
+
   if (post.isSignal) {
     AppState.sender.signalCount++;
-    // Add bits to sender's sent count (5 bits per signal post)
-    const bitsToAdd = Math.min(5, AppState.sender.messageBits.length - AppState.sender.bitsSent);
+    // Extract bits from signal post features
+    const bitsToAdd = Math.min(bitsPerPost, AppState.sender.messageBits.length - AppState.sender.bitsSent);
     AppState.sender.bitsSent += bitsToAdd;
 
     // Add bits to receiver's buffer
     const extractedBits = post.features.bitsString.split('').map(Number).slice(0, bitsToAdd);
     AppState.receiver.bitBuffer.push(...extractedBits);
 
-    logEvent('signal', `Signal post detected: bits=${post.features.bitsString.slice(0, bitsToAdd)}`);
+    logEvent('signal', `Signal post: bits=${post.features.bitsString.slice(0, bitsToAdd)} [${postId}]`);
   } else {
     AppState.sender.coverCount++;
-    logEvent('cover', `Cover post published`);
+    logEvent('cover', `Cover post [${postId}]`);
   }
 
   // Check for message completion
-  if (AppState.sender.bitsSent >= AppState.sender.messageBits.length) {
+  if (AppState.sender.bitsSent >= AppState.sender.messageBits.length && !AppState.sender.complete) {
     AppState.sender.complete = true;
     AppState.receiver.decodedMessage = Protocol.bitsToMessage(AppState.receiver.bitBuffer);
     AppState.receiver.frameState = 'complete';
@@ -2187,21 +2299,24 @@ function updateReceiverDisplay() {
     : '--';
   document.getElementById('accumulatedBits').innerHTML = bufferStr;
 
-  // Update frame display
-  const headerComplete = bitBuffer.length >= 8;
-  const lengthComplete = bitBuffer.length >= 16;
+  // Update frame display — SPEC §8.1 format:
+  // [version:4|flags:4] [length_hi:8] [length_lo:8] [payload...] [auth_tag:64]
+  const headerComplete = bitBuffer.length >= 8;  // 1 byte = version + flags
+  const lengthComplete = bitBuffer.length >= 24;  // + 2 bytes = 16-bit length
 
-  document.getElementById('frameHeader').textContent = headerComplete ? '0xA5 ✓' : `Waiting... (${Math.min(bitBuffer.length, 8)}/8 bits)`;
+  document.getElementById('frameHeader').textContent = headerComplete
+    ? `v${(parseInt(bitBuffer.slice(0,4).join(''),2))}, flags=0x${parseInt(bitBuffer.slice(4,8).join(''),2).toString(16)} ✓`
+    : `Waiting... (${Math.min(bitBuffer.length, 8)}/8 bits)`;
   document.getElementById('frameHeader').className = `frame-value ${headerComplete ? 'complete' : 'pending'}`;
 
   if (headerComplete) {
-    const lengthBits = bitBuffer.slice(8, 16);
     if (lengthComplete) {
-      const length = parseInt(lengthBits.join(''), 2);
-      document.getElementById('frameLength').textContent = `${length} bytes`;
+      const lengthBits = bitBuffer.slice(8, 24);
+      const lengthInBits = parseInt(lengthBits.join(''), 2);
+      document.getElementById('frameLength').textContent = `${lengthInBits} bits (${Math.ceil(lengthInBits/8)} bytes)`;
       document.getElementById('frameLength').className = 'frame-value complete';
     } else {
-      document.getElementById('frameLength').textContent = `(${lengthBits.length}/8 bits)`;
+      document.getElementById('frameLength').textContent = `(${Math.max(0, bitBuffer.length - 8)}/16 bits)`;
     }
   }
 
@@ -2226,7 +2341,7 @@ function updateFeatureDisplay() {
   const features = Protocol.extractFeatures(content, hasMedia);
 
   // Update individual features
-  document.getElementById('lengthValue').textContent = features.length;
+  document.getElementById('lengthValue').textContent = features.graphemeCount;
   document.getElementById('lengthCheck').textContent = features.lengthBit ? 'YES' : 'NO';
   document.getElementById('lengthBit').textContent = features.lengthBit;
   document.getElementById('lengthBit').className = `feature-bit bit-${features.lengthBit}`;
@@ -2239,13 +2354,15 @@ function updateFeatureDisplay() {
   document.getElementById('questionBit').textContent = features.questionBit;
   document.getElementById('questionBit').className = `feature-bit bit-${features.questionBit}`;
 
-  // Update fword display
+  // Update fword display (visible in extended mode)
+  const fwordRow = document.getElementById('fwordRow');
   const fwordLabels = ['pronoun', 'article', 'verb', 'other'];
   document.getElementById('fwordValue').textContent = fwordLabels[features.fwordCategory];
   document.getElementById('fwordHighBit').textContent = features.fwordHigh;
   document.getElementById('fwordHighBit').className = `feature-bit bit-${features.fwordHigh}`;
   document.getElementById('fwordLowBit').textContent = features.fwordLow;
   document.getElementById('fwordLowBit').className = `feature-bit bit-${features.fwordLow}`;
+  if (fwordRow) fwordRow.style.display = AppState.bitsPerPost === 5 ? '' : 'none';
 
   document.getElementById('extractedBits').textContent = features.bitsString;
 
@@ -2253,14 +2370,14 @@ function updateFeatureDisplay() {
   const neededBits = Protocol.getNextRequiredBits(AppState.sender.messageBits, AppState.sender.bitsSent);
   document.getElementById('neededBits').textContent = neededBits;
 
-  // Check match
+  // Check match — bits match AND post would need to be a signal post
   const isMatch = features.bitsString === neededBits;
   const matchEl = document.getElementById('matchDisplay');
   if (isMatch) {
-    matchEl.textContent = '✓ MATCH - This will be a signal post!';
+    matchEl.textContent = '✓ BITS MATCH - If this post is selected as signal, the message advances!';
     matchEl.className = 'match-display match';
   } else {
-    matchEl.textContent = '✗ NO MATCH - This will be a cover post';
+    matchEl.textContent = '✗ BITS DON\'T MATCH - Adjust before publishing as signal';
     matchEl.className = 'match-display no-match';
   }
 
@@ -2275,21 +2392,23 @@ function updateSuggestions(features, neededBits) {
 
   if (features.bitsString === neededBits) {
     suggestionsEl.style.display = 'block';
-    suggestionsEl.innerHTML = '<div class="suggestion-match">Ready to publish. <kbd>Ctrl+Enter</kbd></div>';
+    suggestionsEl.innerHTML = '<div class="suggestion-match">Bits match! Publish when ready. <kbd>Ctrl+Enter</kbd></div>';
     return;
   }
 
   const paths = [];
   if (needed[0] !== current[0]) {
-    paths.push({ action: needed[0] === 1 ? `Add ${50 - features.length} chars` : `Remove ${features.length - 49} chars`, effort: Math.abs(50 - features.length), type: 'len' });
+    const diff = needed[0] === 1 ? Math.max(1, 50 - features.graphemeCount) : features.graphemeCount - 49;
+    paths.push({ action: needed[0] === 1 ? `Add ~${diff} chars (need ≥50 graphemes)` : `Shorten to <50 graphemes`, effort: Math.abs(diff), type: 'len' });
   }
   if (needed[1] !== current[1]) {
     paths.push({ action: needed[1] === 1 ? 'Check "Has media"' : 'Uncheck "Has media"', effort: 1, type: 'media' });
   }
   if (needed[2] !== current[2]) {
-    paths.push({ action: needed[2] === 1 ? 'Add ?' : 'Remove ?', effort: 1, type: 'qmark' });
+    paths.push({ action: needed[2] === 1 ? 'Add a ? somewhere' : 'Remove the ?', effort: 1, type: 'qmark' });
   }
-  if (needed.length > 3 && (needed[3] !== current[3] || needed[4] !== current[4])) {
+  // Extended mode (5-bit) — fword suggestions
+  if (AppState.bitsPerPost === 5 && needed.length > 3 && (needed[3] !== current[3] || needed[4] !== current[4])) {
     const neededCat = (needed[3] << 1) | needed[4];
     const cats = ['pronoun (I, we, you...)', 'article (a, the, this...)', 'verb (is, have, do...)', 'other word'];
     paths.push({ action: `Start with ${cats[neededCat]}`, effort: 3, type: 'fword' });
@@ -2360,8 +2479,11 @@ function updateInspectorKeys() {
     AppState.beacon.value ? Crypto.toHex(AppState.beacon.value).slice(0, 8) + '...' : '...';
   document.getElementById('inspectorEpochKey').textContent =
     AppState.epochKey ? Crypto.toHex(AppState.epochKey).slice(0, 8) + '...' : '...';
-  document.getElementById('inspectorThreshold').textContent = AppState.threshold.toFixed(4);
-  document.getElementById('thresholdPercent').textContent = (AppState.threshold * 100).toFixed(2) + '%';
+  // Threshold is BigInt — display as hex and percentage
+  const thresholdHex = '0x' + AppState.threshold.toString(16).padStart(16, '0').slice(0, 8) + '...';
+  const thresholdPercent = Number(AppState.threshold * 10000n / 0xFFFFFFFFFFFFFFFFn) / 100;
+  document.getElementById('inspectorThreshold').textContent = thresholdHex;
+  document.getElementById('thresholdPercent').textContent = thresholdPercent.toFixed(2) + '%';
 }
 
 // ============================================
@@ -2374,9 +2496,10 @@ async function publishPost() {
   const hasMedia = document.getElementById('hasMedia').checked;
   const features = Protocol.extractFeatures(content, hasMedia);
   const neededBits = Protocol.getNextRequiredBits(AppState.sender.messageBits, AppState.sender.bitsSent);
-  const isMatch = features.bitsString === neededBits;
 
-  await createPost(content, hasMedia, isMatch);
+  // Signal/cover is determined by hash, not by feature matching
+  const post = await createPost(content, hasMedia);
+  const bitsMatch = features.bitsString === neededBits;
 
   // Clear draft
   document.getElementById('draftTextarea').value = '';
@@ -2385,21 +2508,28 @@ async function publishPost() {
 
   // Step mode handling
   if (AppState.ui.mode === 'step') {
-    showStepExplanation(
-      'Post Published',
-      isMatch
-        ? `Signal post! Extracted bits "${features.bitsString}" match the next required bits.`
-        : `Cover post. Bits "${features.bitsString}" don't match needed "${neededBits}".`
-    );
+    if (post.isSignal && bitsMatch) {
+      showStepExplanation('Signal Post Published',
+        `This post's hash selected it as SIGNAL. Its bits "${features.bitsString}" match the needed bits — message advances!`);
+    } else if (post.isSignal && !bitsMatch) {
+      showStepExplanation('Signal Post — Wrong Bits!',
+        `This post IS a signal post (hash < threshold), but its bits "${features.bitsString}" don't match needed "${neededBits}". The wrong bits were extracted — message may be corrupted.`);
+    } else {
+      showStepExplanation('Cover Post Published',
+        `Hash ≥ threshold → cover post. Bits don't matter — this post is invisible to the receiver.`);
+    }
   }
 }
 
 async function publishAsCover() {
+  // In the real protocol, you can't force a post to be cover — it's hash-determined.
+  // But for the demo, publishing as cover means: publish and accept whatever the hash says.
+  // The post might actually be a signal post! This demonstrates the protocol's nature.
   const content = document.getElementById('draftTextarea').value.trim();
   if (!content) return;
 
   const hasMedia = document.getElementById('hasMedia').checked;
-  await createPost(content, hasMedia, false);
+  await createPost(content, hasMedia);
 
   document.getElementById('draftTextarea').value = '';
   document.getElementById('hasMedia').checked = false;
@@ -2480,30 +2610,32 @@ function selectPost(postId) {
 }
 
 function updateHashAnalysis(post) {
+  const selValHex = post.selectionValue !== undefined ? '0x' + post.selectionValue.toString(16).padStart(16, '0') : '—';
+  const threshHex = '0x' + AppState.threshold.toString(16).padStart(16, '0');
   const html = `
     <div class="hash-row">
       <span>Input:</span>
-      <span style="color: var(--text-muted); word-break: break-all;">${post.author}|${post.content.slice(0, 20)}...|${post.epoch}</span>
+      <span style="color: var(--text-muted); word-break: break-all;">epoch_key || "${post.id}"</span>
     </div>
     <div class="hash-row">
       <span>SHA-256:</span>
       <span style="color: var(--accent-info);">${post.hash.slice(0, 16)}...</span>
     </div>
     <div class="hash-row">
-      <span>Normalized:</span>
-      <span>${post.hashFraction.toFixed(6)}</span>
+      <span>Selection (uint64):</span>
+      <span style="word-break: break-all;">${selValHex}</span>
     </div>
     <div class="hash-row">
       <span>Threshold:</span>
-      <span>${AppState.threshold.toFixed(6)}</span>
+      <span>${threshHex}</span>
     </div>
     <div class="hash-result ${post.isSignal ? 'signal' : 'cover'}">
-      ${post.hashFraction.toFixed(4)} ${post.isSignal ? '<' : '≥'} ${AppState.threshold.toFixed(4)} → ${post.isSignal ? 'SIGNAL' : 'COVER'}
+      ${post.isSignal ? 'value < threshold → SIGNAL' : 'value ≥ threshold → COVER'}
     </div>
     <div style="margin-top: var(--spacing-md);">
-      <h5 style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: var(--spacing-xs);">Features:</h5>
+      <h5 style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: var(--spacing-xs);">Features (${post.features.bitsPerPost} bits):</h5>
       <div class="hash-row">
-        <span>Length (${post.features.length}):</span>
+        <span>Length (${post.features.graphemeCount} graphemes):</span>
         <span>${post.features.lengthBit}</span>
       </div>
       <div class="hash-row">
@@ -2744,6 +2876,10 @@ async function resetDemo() {
   await Beacon.init();
   await initMessage(document.getElementById('messageInput').value || 'HELLO');
 
+  // Re-verify test vectors after reset
+  const testResults = await TestVectors.runAll();
+  TestVectors.render(testResults);
+
   updateUI();
   updateFeatureDisplay();
   logEvent('reset', 'Demo reset');
@@ -2865,6 +3001,77 @@ document.getElementById('speedSlider')?.addEventListener('input', (e) => {
 });
 
 // ============================================
+// SPEC TEST VECTOR VERIFICATION (§13)
+// Runs on load to ensure crypto correctness
+// ============================================
+const TestVectors = {
+  async runAll() {
+    const results = [];
+
+    // §13.1: Epoch key derivation
+    // channel_key = 0x00...01 (32 bytes), info = "date:2025-02-01:stegochannel-v0"
+    const channelKey = new Uint8Array(32);
+    channelKey[31] = 1;
+    const epochKey = await Crypto.hkdfExpand(channelKey, 'date:2025-02-01:stegochannel-v0');
+    const epochKeyHex = Crypto.toHex(epochKey);
+    results.push({
+      name: '§13.1 Epoch Key',
+      pass: epochKeyHex === 'a317acc97f878f4098b4a1bb58570b06e41aa36615070d1ca8b3486cf2fbc3b3',
+      expected: 'a317acc9...',
+      got: epochKeyHex.slice(0, 8) + '...'
+    });
+
+    // §13.2: Selection hash for post_id "3jxyz123abc"
+    const postIdBytes = Crypto.encoder.encode('3jxyz123abc');
+    const selInput = Crypto.concat(epochKey, postIdBytes);
+    const selHash = await Crypto.sha256(selInput);
+    const selHashHex = Crypto.toHex(selHash);
+    results.push({
+      name: '§13.2 Selection Hash',
+      pass: selHashHex.startsWith('780d5f2b'),
+      expected: '780d5f2b...',
+      got: selHashHex.slice(0, 8) + '...'
+    });
+
+    // §13.2: Threshold at rate=0.25
+    const threshold = Crypto.computeThreshold(0.25);
+    results.push({
+      name: '§13.2 Threshold',
+      pass: threshold === 4611686018427387903n,
+      expected: '0x3fffffffffffffff',
+      got: '0x' + threshold.toString(16)
+    });
+
+    // §13.5: Auth tag for "Hi" frame
+    // frame_without_auth = [0x00, 0x00, 0x10, 0x48, 0x69]
+    const frameWithoutAuth = new Uint8Array([0x00, 0x00, 0x10, 0x48, 0x69]);
+    const authTag = await Crypto.hmac(epochKey, frameWithoutAuth);
+    const authTagHex = Crypto.toHex(authTag);
+    results.push({
+      name: '§13.5 Auth Tag',
+      pass: authTagHex === '638125722a26a07b',
+      expected: '638125722a26a07b',
+      got: authTagHex
+    });
+
+    return results;
+  },
+
+  render(results) {
+    const el = document.getElementById('testVectorResults');
+    if (!el) return;
+    el.innerHTML = results.map(r =>
+      `<div style="padding: 2px 0; color: ${r.pass ? 'var(--accent-signal)' : 'var(--accent-error)'};">` +
+      `${r.pass ? '✓' : '✗'} ${r.name}: ${r.pass ? r.got : `expected ${r.expected}, got ${r.got}`}</div>`
+    ).join('');
+
+    const allPass = results.every(r => r.pass);
+    console.log(`SPEC test vectors: ${allPass ? 'ALL PASS ✓' : 'FAILURES DETECTED ✗'}`, results);
+    if (!allPass) logEvent('error', 'SPEC test vector verification FAILED — crypto may be incorrect');
+  }
+};
+
+// ============================================
 // INITIALIZATION
 // ============================================
 async function init() {
@@ -2873,10 +3080,14 @@ async function init() {
   updateUI();
   updateFeatureDisplay();
 
-  // Inspector open by default (no hiding features)
+  // Inspector open by default
   AppState.ui.inspectorOpen = true;
   document.getElementById('inspector').classList.add('open');
   document.getElementById('splitView').classList.add('inspector-open');
+
+  // Run SPEC test vector verification
+  const testResults = await TestVectors.runAll();
+  TestVectors.render(testResults);
 
   logEvent('init', 'StegoChannel Demo initialized');
   console.log('StegoChannel Interactive Demo loaded');
